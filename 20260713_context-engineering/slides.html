@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>なぜ AI の答えはバラつくのか — コンテキストエンジニアリング入門</title>
+<style>
+/* ============================================================
+   デザイントークン(themes/tokens.css と同期。単一の真実はそちら)
+   ============================================================ */
+:root {
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  --fs-cover-title: 64px;
+  --fs-cover-sub:   30px;
+  --fs-heading:     48px;
+  --fs-subheading:  30px;
+  --fs-keymsg:      34px;
+  --fs-body:        24px;
+  --fs-body-sm:     22px;
+  --fs-caption:     18px;
+  --fs-footnote:    14px;
+  --fs-section-no:  104px;
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  --sp-1: 8px;  --sp-2: 16px;  --sp-3: 24px;
+  --sp-4: 32px; --sp-5: 48px;  --sp-6: 64px;
+
+  --slide-pad: 64px;
+  --radius-card: 12px;
+  --border-w: 2px;
+}
+/* ===== claude-gray(灰紙)= 今回の選択テーマ ===== */
+body,
+body[data-theme="claude-gray"] {
+  --bg:             #e8e6dc;
+  --text:           #141413;
+  --text-secondary: #63615a;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #faf9f5;
+  --card-border:    #d5d3c8;
+  --code-bg:        #141413;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #dedbd0;
+  --line:           #d5d3c8;
+  --muted-bg:       #dedbd0;
+  --shadow-color:   #d5d3c8;
+}
+/* ===== claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+}
+/* claude-dark: 表紙をポスター型(左下寄せ・大活字)に */
+body[data-theme="claude-dark"] .page--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-end;
+  padding-bottom: 96px;
+}
+body[data-theme="claude-dark"] .page--cover .slide-title { font-size: 76px; }
+body[data-theme="claude-dark"] .cover-kicker { color: var(--accent); }
+body[data-theme="claude-dark"] .cover-rule { display: none; }
+
+/* ============================================================
+   ベース
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+p, li, ul, ol { font-family: var(--font-body); }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+
+.page {
+  width: 1280px;
+  height: 720px;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  position: relative;
+  padding: 48px var(--slide-pad) var(--slide-pad);
+  margin: 0 auto 24px auto;
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { background: none; }
+  .page { margin: 0; page-break-after: always; }
+}
+
+.slide-heading {
+  font-family: var(--font-heading);
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-2);
+}
+.key-message {
+  font-family: var(--font-heading);
+  font-size: var(--fs-keymsg);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+  max-width: 884px;              /* 34px × 26字 */
+}
+.header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+.page-number {
+  position: absolute;
+  right: 48px;
+  bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-footnote);
+  color: var(--text-secondary);
+}
+/* 注記(キャプション扱い。本文量の対象外) */
+.note {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-top: var(--sp-3);
+}
+
+/* ---------- 表紙(cover) ---------- */
+.page--cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.cover-kicker {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.cover-rule { width: 460px; border-top: 1px solid var(--text); margin-bottom: var(--sp-1); }
+.cover-rule--pre-title { margin-bottom: var(--sp-4); }
+.cover-rule--pre-meta { margin-top: var(--sp-2); margin-bottom: var(--sp-3); }
+.page--cover .slide-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-cover-title);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-3);
+}
+.page--cover .slide-subtitle {
+  font-size: var(--fs-cover-sub);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-5);
+}
+.page--cover .cover-meta { font-size: var(--fs-body); line-height: 1.6; color: var(--text-secondary); }
+
+/* ---------- まとめ(summary) ---------- */
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.summary-item .summary-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 64px;
+  line-height: 1.2;
+}
+.summary-item .summary-no--2 { color: var(--accent-2); }
+.summary-item .summary-no--3 { color: var(--accent-3); }
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); max-width: 624px; }
+
+/* ---------- 箇条書き(bullets) ---------- */
+.bullet-list { list-style-position: outside; padding-left: 32px; }
+.bullet-list li {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-2);
+  max-width: 624px;              /* 24px × 26字 */
+}
+
+/* ---------- カード(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card-row + .card-row { margin-top: var(--sp-3); }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.card .card-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: var(--sp-1);
+}
+.card .card-no--2 { color: var(--accent-2); }
+.card .card-no--3 { color: var(--accent-3); }
+.card .card-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+}
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+.card--tight { padding: var(--sp-3); }        /* 4枚並べる行で使う */
+
+/* ---------- 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.compare-col .compare-label {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  margin-bottom: var(--sp-3);
+}
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after  { border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col--alt .compare-label { color: var(--accent-2); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); max-width: 572px; }
+
+/* ---------- 表(dtable。<table> は変換で消えるため div 構成) ---------- */
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable--tight .dtable-cell { padding: var(--sp-1) var(--sp-3); }   /* 行数の多い表 */
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--w1 { width: 380px; }
+.dtable-cell--w2 { width: 772px; }
+.dtable-cell--t1 { width: 300px; }
+.dtable-cell--t2 { width: 200px; }
+.dtable-cell--t3 { width: 380px; }
+.dtable-cell--t4 { width: 272px; }
+.dtable-cell--s1 { width: 200px; }
+.dtable-cell--s2 { width: 952px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+
+/* ---------- 入出力図(io) ---------- */
+.io-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.io-box {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3);
+  width: 290px;
+  text-align: center;
+}
+.io-box--model { width: 400px; border: 3px solid var(--accent); padding: var(--sp-4) var(--sp-3); }
+.io-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent-2); margin-bottom: var(--sp-1); }
+.io-box--model .io-label { color: var(--accent); }
+.io-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: var(--sp-1); }
+.io-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.io-arrow { font-size: 34px; font-weight: 700; color: var(--accent); font-family: var(--font-heading); }
+.io-caption { margin-top: var(--sp-4); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+
+/* ---------- 対話再現(chat) ---------- */
+.ch-thread { display: flex; flex-direction: column; gap: 10px; width: 1020px; margin: 0 auto; }
+.ch-bubble { max-width: 760px; border-radius: var(--radius-card); padding: 18px 24px; }
+.ch-bubble--user { align-self: flex-end; background: var(--muted-bg); border: 2px solid var(--card-border); }
+.ch-bubble--ai { align-self: flex-start; background: var(--card-bg); border: 2px solid var(--card-border); }
+.ch-speaker { font-family: var(--font-heading); font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.ch-bubble--user .ch-speaker { color: var(--accent); }
+.ch-bubble--ai .ch-speaker { color: var(--accent-2); }
+.ch-text { font-size: 22px; line-height: 1.6; }
+
+/* ---------- 変換図(delta。大数字は階層例外) ---------- */
+.dl-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+.dl-card { width: 400px; border-radius: var(--radius-card); padding: 26px 32px; text-align: center; }
+.dl-card--before { background: var(--muted-bg); border: 2px solid var(--muted-bg); }
+.dl-card--after { background: var(--card-bg); border: 3px solid var(--accent); }
+.dl-label { font-family: var(--font-heading); font-size: 18px; font-weight: 700; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 6px; }
+.dl-card--after .dl-label { color: var(--accent); }
+.dl-number { font-family: var(--font-heading); font-size: 68px; font-weight: 700; line-height: 1.15; margin-bottom: 6px; }
+.dl-card--after .dl-number { color: var(--accent); }
+.dl-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.dl-mid { width: 190px; text-align: center; }
+.dl-mid-arrow { font-family: var(--font-heading); font-size: var(--fs-keymsg); font-weight: 700; color: var(--accent); }
+.dl-mid-caption { font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-top: 4px; }
+.dl-band { margin-top: var(--sp-3); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 14px 24px; }
+.dl-band p { font-size: var(--fs-body-sm); font-weight: 700; text-align: center; }
+
+/* ---------- ビッグナンバー(stats。大数字は階層例外) ---------- */
+.st-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-2); }
+.st-tile { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 30px 24px; text-align: center; }
+.st-number { font-family: var(--font-heading); font-size: 80px; font-weight: 700; line-height: 1.1; margin-bottom: 8px; }
+.st-number--1 { color: var(--accent); }
+.st-number--2 { color: var(--accent-2); }
+.st-number--3 { color: var(--accent-3); }
+.st-label { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.st-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.st-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); line-height: 1.6; color: var(--text-secondary); text-align: center; }
+
+/* ---------- フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.flow-step {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--accent);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+}
+.flow-step .flow-step-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: var(--sp-1);
+}
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-1); }
+.flow-arrow {
+  font-size: var(--fs-subheading);
+  color: var(--accent);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+</style>
+</head>
+<body data-theme="claude-dark">
+
+<!-- ============ S1 表紙 ============ -->
+<div class="page page--cover">
+  <p class="cover-kicker">CONTEXT ENGINEERING</p>
+  <div class="cover-rule cover-rule--pre-title"></div>
+  <h1 class="slide-title">なぜ AI の答えは<br>バラつくのか</h1>
+  <p class="slide-subtitle">コンテキストエンジニアリング入門</p>
+  <div class="cover-rule cover-rule--pre-meta"></div>
+  <p class="cover-meta">製造エンジニア・生産技術向け<br>2026-07-13 / 60分</p>
+</div>
+
+<!-- ============ S2 今日のゴール ============ -->
+<div class="page">
+  <h2 class="slide-heading">今日のゴール</h2>
+  <p class="key-message">聞いて終わりにせず、<br>自分で直せる状態になって帰ります</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">AI の答えが外れた原因を、自分で切り分けられる</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">02</p>
+    <p class="summary-text">自分の指示文に情報を補って、出力を意図に近づけられる</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--3">03</p>
+    <p class="summary-text">「なぜ外れたか」をチームの共通の言葉で議論できる</p>
+  </div>
+  <p class="note">この3つは聞いて分かるものではないので、今日は手を動かす時間を2回とります。</p>
+  <p class="page-number">2 / 20</p>
+</div>
+
+<!-- ============ S3 ワーク ============ -->
+<div class="page">
+  <h2 class="slide-heading">ワーク:この一文を投げてください</h2>
+  <p class="key-message">普段あなたが書く指示と、<br>同じ水準の一文です</p>
+  <div class="header-rule"></div>
+  <div class="ch-thread">
+    <div class="ch-bubble ch-bubble--user">
+      <p class="ch-speaker">あなた</p>
+      <p class="ch-text">先週から3号ラインで外観不良の流出が増えています。<br>考えられる原因と、再発防止策を教えてください。</p>
+    </div>
+  </div>
+  <p class="note">この一文には、いつから(時期)・どこで(場所)・何が(症状)・何をしてほしいか(依頼)が揃っています。<br>制限時間4分。返ってきた答えを、隣の人と画面を並べて読み比べてください。</p>
+  <p class="page-number">3 / 20</p>
+</div>
+
+<!-- ============ S4 種明かし ============ -->
+<div class="page">
+  <h2 class="slide-heading">種明かし:何が返ってきたか</h2>
+  <p class="key-message">報告書に貼れそうなのに、<br>あなたの現場の話が1行もない</p>
+  <div class="header-rule"></div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no">症状 01</p>
+      <p class="card-title">教科書的な一般論</p>
+      <p class="card-text">4M と「日常点検の徹底」。<br>どの工場にも<br>当てはまる中身。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">症状 02</p>
+      <p class="card-title">隣と答えが違う</p>
+      <p class="card-text">片方は人手検査、<br>片方は画像検査機を<br>前提にしていた。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">症状 03</p>
+      <p class="card-title">黙って前提を置く</p>
+      <p class="card-text">「分かりません」と<br>言わず、それらしく<br>答える。ここが危ない。</p>
+    </div>
+  </div>
+  <p class="note">AI は不確実なとき、分からないと認める代わりに、もっともらしいが誤った答えを出す。<br>訓練の仕方そのものが、黙って当てずっぽうを言うほうに報酬を与えている(OpenAI)。</p>
+  <p class="page-number">4 / 20</p>
+</div>
+
+<!-- ============ S5 原理 ============ -->
+<div class="page">
+  <h2 class="slide-heading">原理:机の上のものだけで考える</h2>
+  <p class="key-message">AI は、指示文に載っている情報だけを<br>机に広げて答えを作っている</p>
+  <div class="header-rule"></div>
+  <div class="io-row">
+    <div class="io-box">
+      <p class="io-label">INPUT</p>
+      <p class="io-title">机の上</p>
+      <p class="io-sub">指示文に書いたこと。<br>それだけ。</p>
+    </div>
+    <p class="io-arrow">▶</p>
+    <div class="io-box io-box--model">
+      <p class="io-label">AI</p>
+      <p class="io-title">続きを確率で埋める</p>
+      <p class="io-sub">足りない部分は、聞き返さずに<br>最もありそうな前提で埋める。</p>
+    </div>
+    <p class="io-arrow">▶</p>
+    <div class="io-box">
+      <p class="io-label">OUTPUT</p>
+      <p class="io-title">一般論</p>
+      <p class="io-sub">誰にでも当てはまる<br>答え。</p>
+    </div>
+  </div>
+  <p class="io-caption">先輩エンジニアなら、設備名も症状も履歴も「聞き返して」から答える。AI は聞き返さない。</p>
+  <p class="page-number">5 / 20</p>
+</div>
+
+<!-- ============ S6 AIが知らないこと ============ -->
+<div class="page">
+  <h2 class="slide-heading">AI が知らないこと</h2>
+  <p class="key-message">あなたが当たり前だと思っている前提は、<br>書かない限り1つも伝わっていない</p>
+  <div class="header-rule"></div>
+  <div class="dtable--tight">
+    <div class="dtable-row dtable-row--head">
+      <div class="dtable-cell dtable-cell--w1"><p>知らないもの</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p>具体例</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--w1"><p>設備のこと</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p>型式・ライン構成・稼働条件</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--w1"><p>社内の基準</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p>不良の判定基準・過去の不良履歴・是正のルール</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--w1"><p>あなたの立場と目的</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p>報告書を書きたいのか、今すぐ止血したいのか</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--w1"><p>前回の会話</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p>セッションが変われば、昨日の説明も消えている</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--w1"><p class="cell-accent">社内でだけ通じる言葉</p></div>
+      <div class="dtable-cell dtable-cell--w2"><p class="cell-accent">「3号ライン」「流出」が何を指すのか</p></div>
+    </div>
+  </div>
+  <p class="note">「製造現場特有の専門用語、機器の型式、現場のノウハウを学習していない」 三菱電機(2025)</p>
+  <p class="page-number">6 / 20</p>
+</div>
+
+<!-- ============ S7 章まとめ ============ -->
+<div class="page">
+  <h2 class="slide-heading">バラつきの正体</h2>
+  <p class="key-message">AI の気まぐれではなく、<br>机の上に載せた情報の差である</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">うまくいった日は、たまたま十分に書けていた日</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">02</p>
+    <p class="summary-text">何が効いたかを知らないから、再現できない</p>
+  </div>
+  <div class="dl-band">
+    <p>机の上に載せる情報の設計 = コンテキストエンジニアリング</p>
+  </div>
+  <p class="note">推論のたびに、モデルに何を渡すかを決める継続的な選別作業(Anthropic の定義)。</p>
+  <p class="page-number">7 / 20</p>
+</div>
+
+<!-- ============ S8 4要素 ============ -->
+<div class="page">
+  <h2 class="slide-heading">机に載せる4つのもの</h2>
+  <p class="key-message">必要な情報は「指示・背景・参照情報・出力形式」<br>の4つに分解できる</p>
+  <div class="header-rule"></div>
+  <div class="card-row">
+    <div class="card card--tight">
+      <p class="card-no">要素 01</p>
+      <p class="card-title">指示</p>
+      <p class="card-text">何をしてほしいか。<br>動詞・粒度・<br>制約まで書く。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">要素 02</p>
+      <p class="card-title">背景</p>
+      <p class="card-text">誰が・何のために・<br>どんな状況か。<br>立場が変われば<br>正解も変わる。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--3">要素 03</p>
+      <p class="card-title">参照情報</p>
+      <p class="card-text">判断に必要な<br>実データ。<br>貼らない事実は<br>存在しない。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no">要素 04</p>
+      <p class="card-title">出力形式</p>
+      <p class="card-text">どんな形で<br>返してほしいか。<br>手戻りを<br>一番削る。</p>
+    </div>
+  </div>
+  <p class="note">覚えるためではなく、診断するための4つ。外れたら「どれが空だったか」を見る。<br>(各社の公式分類を本セミナー用に統合した言い換えです)</p>
+  <p class="page-number">8 / 20</p>
+</div>
+
+<!-- ============ S9 指示 ============ -->
+<div class="page">
+  <h2 class="slide-heading">要素① 指示</h2>
+  <p class="key-message">「教えて」ではなく、<br>動詞と粒度と制約まで書き切る</p>
+  <div class="header-rule"></div>
+  <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">よくある指示</p>
+      <ul class="bullet-list">
+        <li>原因と対策を教えて</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">書き切った指示</p>
+      <ul class="bullet-list">
+        <li>可能性の高い順に、原因を5つ挙げる</li>
+        <li>各原因の切り分け手順を1行で添える</li>
+        <li>今日、現場でできる対応に限る</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">よくある失敗:複数の依頼を1文に混ぜる。原因も対策も報告書もと欲張ると、全部が浅くなる。<br>複雑なタスクは小さく分けたほうが精度が上がる(Microsoft / OpenAI 公式)。</p>
+  <p class="page-number">9 / 20</p>
+</div>
+
+<!-- ============ S10 背景 ============ -->
+<div class="page">
+  <h2 class="slide-heading">要素② 背景</h2>
+  <p class="key-message">立場と目的が変われば、<br>正解の答えも変わる</p>
+  <div class="header-rule"></div>
+  <div class="compare-row">
+    <div class="compare-col">
+      <p class="compare-label">明日の朝会で報告したい</p>
+      <ul class="bullet-list">
+        <li>網羅的な原因分析がほしい</li>
+        <li>根拠と出典が要る</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--alt">
+      <p class="compare-label">いま10分で止血したい</p>
+      <ul class="bullet-list">
+        <li>今すぐ確認できる2〜3点だけ</li>
+        <li>網羅性は要らない</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">同じ「原因を教えて」でも、欲しい答えは別物。背景が空だと、AI は最も一般的な状況を勝手に仮定する。<br>その仮定があなたの現場と少しずれているだけで、答えは丸ごと外れる。</p>
+  <p class="page-number">10 / 20</p>
+</div>
+
+<!-- ============ S11 参照情報 ============ -->
+<div class="page">
+  <h2 class="slide-heading">要素③ 参照情報</h2>
+  <p class="key-message">AI が持っていない事実は、<br>貼らない限り存在しないのと同じ</p>
+  <div class="header-rule"></div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no">何を貼るか</p>
+      <p class="card-title">実データ</p>
+      <p class="card-text">エラーコード。<br>稼働ログの該当行。<br>設備仕様の抜粋。<br>過去の類似不良。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">どう貼るか</p>
+      <p class="card-title">該当箇所を原文で</p>
+      <p class="card-text">要約すると、重要と<br>思わなかった一行が<br>落ちる。それが決め手<br>だったりする。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">なぜ効くか</p>
+      <p class="card-title">学習データに無い</p>
+      <p class="card-text">自社の設備も<br>不良履歴も入って<br>いない。推測で埋め<br>られると嘘になる。</p>
+    </div>
+  </div>
+  <p class="note">社外秘・個人情報の扱いは社内ルールに従うこと。JDLA のガイドラインは、個人情報・秘密情報・<br>第三者著作物を入力禁止としている。図面・稼働ログ・不良履歴は秘密情報の典型。</p>
+  <p class="page-number">11 / 20</p>
+</div>
+
+<!-- ============ S12 出力形式 ============ -->
+<div class="page">
+  <h2 class="slide-heading">要素④ 出力形式</h2>
+  <p class="key-message">形を指定しないから、使えない形で<br>返ってきて、結局書き直している</p>
+  <div class="header-rule"></div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--t1"><p>考えられる原因</p></div>
+    <div class="dtable-cell dtable-cell--t2"><p>発生頻度</p></div>
+    <div class="dtable-cell dtable-cell--t3"><p>確認方法</p></div>
+    <div class="dtable-cell dtable-cell--t4"><p>対処コスト</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--t1"><p>センサの汚れ</p></div>
+    <div class="dtable-cell dtable-cell--t2"><p>高</p></div>
+    <div class="dtable-cell dtable-cell--t3"><p>現物確認(5分)</p></div>
+    <div class="dtable-cell dtable-cell--t4"><p>低</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--t1"><p>治具の摩耗</p></div>
+    <div class="dtable-cell dtable-cell--t2"><p>中</p></div>
+    <div class="dtable-cell dtable-cell--t3"><p>寸法測定</p></div>
+    <div class="dtable-cell dtable-cell--t4"><p>中</p></div>
+  </div>
+  <p class="note">「原因ごとに、発生頻度・確認方法・対処コストの3列の表で」と書くだけで、返ってきたものが<br>そのまま検討会の資料になる。空欄が出たら、それが「渡し忘れた情報」を教えてくれる。<br>もう一手:「情報が足りなければ不明と書いて」と逃げ道を与えると、作り話が減る(Microsoft)。</p>
+  <p class="page-number">12 / 20</p>
+</div>
+
+<!-- ============ S13 では全部渡せば? ============ -->
+<div class="page">
+  <h2 class="slide-heading">では、全部渡せばいいのか</h2>
+  <p class="key-message">「足りないなら全部渡そう」が、<br>次にはまる落とし穴です</p>
+  <div class="header-rule"></div>
+  <ul class="bullet-list">
+    <li>仕様書もログも議事録も、全部貼れば賢くなるはず</li>
+    <li>実際には、ある量を超えると精度は下がり始める</li>
+    <li>ここが、使い慣れた人と使いこなす人の分かれ目</li>
+  </ul>
+  <p class="note">しかも、ここまでの話を素直に聞いた人ほど、まっすぐこの穴に落ちます。</p>
+  <p class="page-number">13 / 20</p>
+</div>
+
+<!-- ============ S14 context rot ============ -->
+<div class="page">
+  <h2 class="slide-heading">context rot(文脈の劣化)</h2>
+  <p class="key-message">渡した情報量が増えるほど、<br>正確に思い出す力は落ちる</p>
+  <div class="header-rule"></div>
+  <div class="dl-row">
+    <div class="dl-card dl-card--before">
+      <p class="dl-label">SHORT</p>
+      <p class="dl-number">84.9%</p>
+      <p class="dl-sub">入力 12.8万トークン</p>
+    </div>
+    <div class="dl-mid">
+      <p class="dl-mid-arrow">▶</p>
+      <p class="dl-mid-caption">渡す量を約8倍に</p>
+    </div>
+    <div class="dl-card dl-card--after">
+      <p class="dl-label">LONG</p>
+      <p class="dl-number">26.3%</p>
+      <p class="dl-sub">入力 100万トークン</p>
+    </div>
+  </div>
+  <div class="dl-band">
+    <p>中間に埋めた情報は、資料を1枚も渡さないときより成績が落ちる</p>
+  </div>
+  <p class="st-caption">AI の注意力は有限の予算。関係ない情報を1行足すたびに、その予算が削られる(Anthropic)。<br>出典:Google DeepMind モデルカード(MRCR v2)/ Liu et al., Lost in the Middle(TACL)</p>
+  <p class="page-number">14 / 20</p>
+</div>
+
+<!-- ============ S15 必要十分 ============ -->
+<div class="page">
+  <h2 class="slide-heading">捨てることが効く</h2>
+  <p class="key-message">必要な情報を全部入れて、<br>関係ない情報を1つも入れない</p>
+  <div class="header-rule"></div>
+  <div class="st-row">
+    <div class="st-tile">
+      <p class="st-number st-number--1">88.3%</p>
+      <p class="st-label">正解1件だけ渡す</p>
+      <p class="st-sub">全部渡すより高い</p>
+    </div>
+    <div class="st-tile">
+      <p class="st-number st-number--2">+29%</p>
+      <p class="st-label">不要な文脈を削る</p>
+      <p class="st-sub">Anthropic の実測</p>
+    </div>
+    <div class="st-tile">
+      <p class="st-number st-number--3">-84%</p>
+      <p class="st-label">トークン消費</p>
+      <p class="st-sub">削減しつつ完走</p>
+    </div>
+  </div>
+  <p class="st-caption">捨てるもの:今回の判断に関係しない章。雑談の履歴。念のため貼った別ラインのログ。<br>会話が長引いたら、新しいチャットに要点だけ持ち込む(公式推奨ではなく、研究ベースの経験則)。<br>判断基準:その情報は、AI の答えを変えるか。変えないなら入れない。</p>
+  <p class="page-number">15 / 20</p>
+</div>
+
+<!-- ============ S16 章まとめ ============ -->
+<div class="page">
+  <h2 class="slide-heading">量ではなく、密度</h2>
+  <p class="key-message">コンテキストは、<br>盛るものではなく選ぶものである</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">4つの要素を埋める。関係ないものは捨てる。</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">02</p>
+    <p class="summary-text">長いプロンプトを書ける人が上手いのではない</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--3">03</p>
+    <p class="summary-text">短くて、外さない指示を書ける人が上手い</p>
+  </div>
+  <p class="page-number">16 / 20</p>
+</div>
+
+<!-- ============ S17 演習 ============ -->
+<div class="page">
+  <h2 class="slide-heading">演習:4要素で診断して直す</h2>
+  <p class="key-message">冒頭のワークで投げた一文を、<br>自分で直してください</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 01</p>
+      <p class="flow-step-text">診断する</p>
+      <p class="flow-step-sub">4つのうち、<br>何が空か</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 02</p>
+      <p class="flow-step-text">補って書き直す</p>
+      <p class="flow-step-sub">背景・参照情報・<br>出力形式を足す</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 03</p>
+      <p class="flow-step-text">投げ直して比べる</p>
+      <p class="flow-step-sub">最初の答えと<br>並べて読む</p>
+    </div>
+  </div>
+  <p class="note">この一文に入っているのは、粗い指示と、背景のかけら(3号ライン・先週から)だけ。<br>参照情報と出力形式はゼロ。社内でしか通じない言葉は、AI に通じる言葉に開くこと。</p>
+  <p class="page-number">17 / 20</p>
+</div>
+
+<!-- ============ S18 進め方 ============ -->
+<div class="page">
+  <h2 class="slide-heading">進め方(8分)</h2>
+  <p class="key-message">完璧を目指さず、<br>抜けていたものを1つ足せばいい</p>
+  <div class="header-rule"></div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--s1"><p>時間</p></div>
+    <div class="dtable-cell dtable-cell--s2"><p>やること</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--s1"><p class="cell-accent">5分</p></div>
+    <div class="dtable-cell dtable-cell--s2"><p>4要素を補って書き直す</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--s1"><p class="cell-accent">2分</p></div>
+    <div class="dtable-cell dtable-cell--s2"><p>AI に投げて、返ってきた答えを読む</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--s1"><p class="cell-accent">1分</p></div>
+    <div class="dtable-cell dtable-cell--s2"><p>隣の人と見せ合う</p></div>
+  </div>
+  <p class="note">手が止まったら:「そのプロンプトを、背景を知らない同僚に見せてみる。<br>その人が混乱するなら、AI も混乱する」(Anthropic 公式の黄金律)<br>会社のルール上どうしても貼れない情報は、仮の値で構いません。</p>
+  <p class="page-number">18 / 20</p>
+</div>
+
+<!-- ============ S19 振り返り ============ -->
+<div class="page">
+  <h2 class="slide-heading">振り返り:何が変わったか</h2>
+  <p class="key-message">変わったのは AI ではなく、<br>あなたが机に載せたものである</p>
+  <div class="header-rule"></div>
+  <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">最初の答え</p>
+      <ul class="bullet-list">
+        <li>4M と一般論のリスト</li>
+        <li>どの工場にも当てはまる</li>
+        <li>次の一手にならない</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">直した後の答え</p>
+      <ul class="bullet-list">
+        <li>自分の設備を前提にした手順</li>
+        <li>「このセンサの閾値を確認」</li>
+        <li>明日そのままやれる</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">日立・大みか事業所は、熟練者の暗黙知をプロンプトに落とし込み、模範解答を100件以上作成した。<br>設備トラブル対応で、必要な情報の検索時間を約9割削減(2025年6月発表)。やったことは今日と同じ。</p>
+  <p class="page-number">19 / 20</p>
+</div>
+
+<!-- ============ S20 持ち帰り ============ -->
+<div class="page">
+  <h2 class="slide-heading">明日から</h2>
+  <p class="key-message">出力が期待外れなら、<br>AI を疑う前に机の上を疑う</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">4つのどれが空かを見る(たいてい背景と出力形式)</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">02</p>
+    <p class="summary-text">足すだけでなく、関係ない情報は捨てる</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--3">03</p>
+    <p class="summary-text">「AI は使えない」を「背景が足りない」に言い換える</p>
+  </div>
+  <p class="note">送信ボタンを押す前に、4つを一度だけ見返す。30秒もかかりません。</p>
+  <p class="page-number">20 / 20</p>
+</div>
+
+</body>
+</html>

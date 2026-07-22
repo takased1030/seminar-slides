@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>生成AI活用入門 — 開発部</title>
+<style>
+  /* html2pptx の正規化CSS(素の p/li に Arial 直指定)への上書き対策。slide-guide §2 参照 */
+  :root {
+    --font-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --font-family-display: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --font-family-content: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #e5e5e5; }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-family-display); }
+  p, li, ul, ol { font-family: var(--font-family-content); }
+  .page {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    margin: 16px auto;
+    background: #ffffff;
+    overflow: hidden;
+    padding: 56px 72px;
+    font-family: var(--font-body);
+    color: #1a1a1a;
+    page-break-after: always;
+  }
+  .page h1 { font-size: 56px; line-height: 1.3; }
+  /* 3部構成: タイトル(40px)→キーメッセージ(32px)→区切り線→ボディ(28px以下)。
+     階層はタイトル > キーメッセージ > ボディを厳守(slide-guide §1) */
+  .page h2 { font-size: 40px; line-height: 1.3; margin-bottom: 0; }
+  .page .key-message { font-size: 32px; font-weight: 500; color: #444444; margin-top: 16px; max-width: none; }
+  .header-rule { border-bottom: 4px solid #1a1a1a; margin-top: 20px; margin-bottom: 32px; }
+  .page p, .page li { font-size: 28px; line-height: 1.7; max-width: 728px; }
+  .page ul { margin-left: 1.2em; }
+  .layout-title { display: flex; flex-direction: column; justify-content: center; }
+  .layout-title .subtitle { font-size: 32px; margin-top: 24px; color: #444444; max-width: none; }
+  .layout-title .meta { position: absolute; bottom: 56px; left: 72px; font-size: 24px; color: #666666; }
+  .layout-section { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f2f2f2; }
+  .layout-section h1 { font-size: 48px; }
+  .section-sub { font-size: 34px; margin-top: 20px; color: #444444; }
+  .layout-summary .takeaway { margin-top: 24px; padding: 24px; border: 3px solid #1a1a1a; }
+  .layout-summary .takeaway p { font-size: 28px; }
+  .note { margin-top: 28px; font-size: 24px; color: #666666; max-width: none; }
+  .demo { margin-top: 8px; padding: 24px; background: #f2f2f2; border-left: 8px solid #1a1a1a; max-width: 780px; }
+  .demo p { font-size: 26px; line-height: 1.6; }
+  .takeaway p { font-size: 28px; }
+  /* ページ番号: 下端24px配置のため14px以下(10.5pt超は下端48px以上が必要 — slide-guide §2) */
+  .page-number { position: absolute; bottom: 24px; right: 40px; }
+  .page-number p { font-size: 14px; color: #888888; }
+</style>
+</head>
+<body>
+
+<!-- 1: タイトル -->
+<div class="page layout-title">
+  <h1>生成AI活用入門</h1>
+  <p class="subtitle">明日の仕事で使えるプロンプトを、自分の手で書く30分</p>
+  <p class="meta">2026-07-13 / 開発部 / 30分</p>
+  <div class="page-number"><p>1</p></div>
+</div>
+
+<!-- 2: 今日のゴール -->
+<div class="page layout-content">
+  <h2>30分後、あなたは2つのことができるようになっています</h2>
+  <p class="key-message">一発で正解を引き当てる話ではありません。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>自分の業務で使えるプロンプト(AIへの指示文)を<br>
+        書いて、成果物を1つ出せる</li>
+    <li>出てきた結果の良し悪しを判断して、<br>
+        プロンプトを直して出し直せる</li>
+  </ul>
+  <div class="page-number"><p>2</p></div>
+</div>
+
+<!-- 3: 失敗プロンプトの実演 -->
+<div class="page layout-content">
+  <h2>この指示では、使えるテストコードは出ません</h2>
+  <p class="key-message">手直しを考えると、自分で書いたほうが早い。</p>
+  <div class="header-rule"></div>
+  <div class="demo"><p>「このコードのテストを書いて」</p></div>
+  <ul>
+    <li>テストフレームワークが違う</li>
+    <li>異常系が1つも書かれていない</li>
+    <li>モックの流儀がこのリポジトリと違う</li>
+  </ul>
+  <div class="page-number"><p>3</p></div>
+</div>
+
+<!-- 4: 型で書いた実演 -->
+<div class="page layout-content">
+  <h2>同じモデル・同じコードで、指示の書き方だけを変えます</h2>
+  <p class="key-message">差を生んだのはセンスではなく、型です。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>フレームワークが合っている</li>
+    <li>異常系が入っている</li>
+    <li>手直しの土台として使える</li>
+  </ul>
+  <div class="page-number"><p>4</p></div>
+</div>
+
+<!-- 5: 型の全体像 -->
+<div class="page layout-content">
+  <h2>成果物が出るプロンプトには、4つの要素が入っています</h2>
+  <p class="key-message">4つ全部を毎回びっしり書く必要はありません(後述)。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>役割 — 誰として答えるか</li>
+    <li>タスク — 何をしてほしいか</li>
+    <li>文脈 — 前提として何を知っておくべきか</li>
+    <li>出力形式 — どんな形で返すか</li>
+  </ul>
+  <div class="page-number"><p>5</p></div>
+</div>
+
+<!-- 6: 役割 -->
+<div class="page layout-content">
+  <h2>役割 — 誰として答えるかを一文で与えます</h2>
+  <p class="key-message">役割を与えると専門領域のタスクで性能が上がる。</p>
+  <div class="header-rule"></div>
+  <div class="demo"><p>「あなたは我々のチームのシニアエンジニアで、</p>
+    <p>テストコードのレビューを日常的にやっています」</p></div>
+  <p class="note">出典: Anthropic 公式資料。</p>
+  <div class="page-number"><p>6</p></div>
+</div>
+
+<!-- 7: タスク -->
+<div class="page layout-content">
+  <h2>タスク — 動詞で、一度に一つだけ頼みます</h2>
+  <p class="key-message">もっともらしい嘘が、我々には一番たちが悪い。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>3つも4つも同時に頼むと、どれも中途半端になる</li>
+    <li>後輩に頼むときと同じ。一度に一つ</li>
+    <li>「分からないことは、分からないと言ってください」<br>
+        の一文を添える</li>
+  </ul>
+  <div class="page-number"><p>7</p></div>
+</div>
+
+<!-- 8: 文脈 -->
+<div class="page layout-content">
+  <h2>文脈 — 4つのうち、開発部に一番効くのがここです</h2>
+  <p class="key-message">既存コードを1枚貼るだけで、出力は激変します。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>使っているテストフレームワークは何か</li>
+    <li>既存のテストはどう書かれているか</li>
+    <li>モックはどのライブラリで、どう張るか</li>
+    <li>このリポジトリの規約は何か</li>
+  </ul>
+  <div class="page-number"><p>8</p></div>
+</div>
+
+<!-- 9: 出力形式 -->
+<div class="page layout-content">
+  <h2>出力形式 — 何に使うかを先に決めて、その形で返させます</h2>
+  <p class="key-message">解説付きで返されると、そのままコピーして使えません。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>そのままエディタに貼れる形で返してください</li>
+    <li>観点・理由・重大度の3列の表で返してください</li>
+  </ul>
+  <p class="note">地味ですが、毎日効いてきます。</p>
+  <div class="page-number"><p>9</p></div>
+</div>
+
+<!-- 10: 最小構造で足りる -->
+<div class="page layout-content">
+  <h2>最良のプロンプトは、最長でも最複雑でもありません</h2>
+  <p class="key-message">目的を確実に達成できる、最小限の構造を持つもの。</p>
+  <div class="header-rule"></div>
+  <p class="note">Anthropic 公式ブログより。XMLタグでの構造化も、<br>多くの場合は不要とされています。</p>
+  <p class="note">短く書いて、足りなければ足す。呪文の暗記は不要です。</p>
+  <div class="page-number"><p>10</p></div>
+</div>
+
+<!-- 11: 評価軸 -->
+<div class="page layout-content">
+  <h2>出てきた結果は、3つの軸で見ます</h2>
+  <p class="key-message">なんとなく駄目、で書き直さない。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>頼んだことが全部入っているか → 直すのはタスク</li>
+    <li>事実として正しいか → 直すのは文脈</li>
+    <li>そのまま使えるか → 直すのは出力形式</li>
+  </ul>
+  <div class="page-number"><p>11</p></div>
+</div>
+
+<!-- 12: 一要素だけ直す反復 -->
+<div class="page layout-content">
+  <h2>直すのは、一度に一箇所だけです</h2>
+  <p class="key-message">一発で当てるゲームではありません。</p>
+  <div class="header-rule"></div>
+  <div class="demo"><p>異常系が抜けている → タスクに一行足す</p>
+    <p>「入力が空の場合と、型が違う場合を必ず含める」</p></div>
+  <p class="note">3箇所まとめて直すと、<br>何が効いたのか分からなくなります。</p>
+  <div class="page-number"><p>12</p></div>
+</div>
+
+<!-- 13: 演習のお題と手順 -->
+<div class="page layout-content">
+  <h2>今週の自分の実タスクで、プロンプトを1本書いてください</h2>
+  <p class="key-message">粗くていい。2回目を回すところまでがゴール。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>書く(4分) — 4要素を並べる。
+        文脈に一番時間をかける</li>
+    <li>出す・採点する(2分) — 3つの評価軸で見る</li>
+    <li>直して出し直す(2分) — 落ちた軸の要素を1つだけ</li>
+  </ul>
+  <div class="page-number"><p>13</p></div>
+</div>
+
+<!-- 14: 演習中 -->
+<div class="page layout-section">
+  <h1>演習(8分)</h1>
+  <p class="section-sub">書く → 出す → 採点 → 直す</p>
+  <div class="page-number"><p>14</p></div>
+</div>
+
+<!-- 15: 講評 -->
+<div class="page layout-content">
+  <h2>うまくいった人は、例外なく文脈を貼っています</h2>
+  <p class="key-message">上手な人になったのではなく、直せる人になった。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>役割とタスクは、皆さん自然に書けている</li>
+    <li>1回目で崩れるのは、たいてい文脈が薄いとき</li>
+  </ul>
+  <p class="note">前者は才能の話。後者は手順の話。<br>だから今日からできます。</p>
+  <div class="page-number"><p>15</p></div>
+</div>
+
+<!-- 16: 機密情報の線引き -->
+<div class="page layout-content">
+  <h2>貼ってはいけないものが、はっきりあります</h2>
+  <p class="key-message">社外との打ち合わせで、ホワイトボードに書けるか。</p>
+  <div class="header-rule"></div>
+  <ul>
+    <li>顧客の個人情報</li>
+    <li>認証情報・トークン</li>
+    <li>契約で外に出せないと決まっているコード</li>
+  </ul>
+  <p class="note">迷ったら、貼る前に聞いてください。</p>
+  <div class="page-number"><p>16</p></div>
+</div>
+
+<!-- 17: 明日やること -->
+<div class="page layout-summary">
+  <h2>明日やることを、一つだけ決めて帰ってください</h2>
+  <p class="key-message">今日書いたプロンプトを、明日、別のタスクでもう一度使う。</p>
+  <div class="header-rule"></div>
+  <div class="takeaway">
+    <p>自分の業務のプロンプトを書いて、成果物を出せる。</p>
+    <p>出力を判断して、直して、出し直せる。</p>
+  </div>
+  <p class="note">効いた書き方は、チームのチャンネルへ。</p>
+  <div class="page-number"><p>17</p></div>
+</div>
+
+</body>
+</html>

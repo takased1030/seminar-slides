@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>まず、一つ動かす — Claude Code 導入セミナー</title>
+<style>
+/* ============================================================
+   デザイントークン(themes/tokens.css の :root を丸ごと採用)
+   ============================================================ */
+:root {
+  --palette-dark:       #141413;
+  --palette-light:      #faf9f5;
+  --palette-mid-gray:   #b0aea5;
+  --palette-light-gray: #e8e6dc;
+  --palette-orange:     #d97757;
+  --palette-blue:       #6a9bcc;
+  --palette-green:      #788c5d;
+
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  --fs-cover-title: 64px;
+  --fs-cover-sub:   30px;
+  --fs-heading:     48px;
+  --fs-subheading:  30px;
+  --fs-keymsg:      34px;
+  --fs-body:        24px;
+  --fs-body-sm:     22px;
+  --fs-caption:     18px;
+  --fs-footnote:    14px;
+  --fs-section-no:  104px;
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  --sp-1: 8px;  --sp-2: 16px;  --sp-3: 24px;
+  --sp-4: 32px; --sp-5: 48px;  --sp-6: 64px;
+
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --slide-pad: 64px;
+  --radius-card: 12px;
+  --border-w: 2px;
+
+  /* 4つのエンジニアリングの層カラー(教訓 2026-07-16。第4色=落ち着いた紫を追加) */
+  --layer-prompt:  #d97757;
+  --layer-context: #6a9bcc;
+  --layer-harness: #788c5d;
+  --layer-loop:    #9a86c4;
+}
+/* ===== claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+  --venn-a:         #6a9bcc8c;
+  --venn-b:         #788c5d8c;
+  --heat-good:      #2b3325;
+  --heat-ok:        #24303d;
+  --heat-part:      #3d2a22;
+  --heat-no:        #1d1d1b;
+}
+/* --- 表紙をポスター型(左下寄せ・大活字)に --- */
+body[data-theme="claude-dark"] .page--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-end;
+  padding-bottom: 96px;
+}
+body[data-theme="claude-dark"] .page--cover .slide-title { font-size: 76px; }
+body[data-theme="claude-dark"] .cover-kicker { color: var(--accent); }
+
+/* ============================================================
+   ベース
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+p, li, ul, ol { font-family: var(--font-body); }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+
+.page {
+  width: 1280px;
+  height: 720px;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  position: relative;
+  padding: 48px var(--slide-pad) var(--slide-pad);
+  margin: 0 auto 24px auto;
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { background: none; }
+  .page { margin: 0; page-break-after: always; }
+}
+
+/* 層カラーをページ単位で --accent に流し込む(装飾の一貫性) */
+.page--prompt  { --accent: var(--layer-prompt); }
+.page--context { --accent: var(--layer-context); }
+.page--harness { --accent: var(--layer-harness); }
+.page--loop    { --accent: var(--layer-loop); }
+
+/* 3部構成: タイトル → キーメッセージ → 区切り線 → ボディ */
+.slide-heading {
+  font-family: var(--font-heading);
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-2);
+}
+.key-message {
+  font-family: var(--font-heading);
+  font-size: var(--fs-keymsg);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+  max-width: 1020px;
+}
+.header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+.page-number {
+  position: absolute;
+  right: 48px;
+  bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-footnote);
+  color: var(--text-secondary);
+}
+.body-lead { font-size: var(--fs-body); line-height: var(--lh-body); margin-bottom: var(--sp-3); max-width: 1000px; }
+.body-cap  { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-3); max-width: 1050px; }
+
+/* ---------- 現在地マップ(mapbar) ---------- */
+.mapbar { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.mapbar-item {
+  border-radius: 999px;
+  padding: 8px 22px;
+  border: 2px solid var(--card-border);
+  background: var(--muted-bg);
+}
+.mapbar-item p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+.mapbar-item--prompt  { background: var(--layer-prompt);  border-color: var(--layer-prompt); }
+.mapbar-item--context { background: var(--layer-context); border-color: var(--layer-context); }
+.mapbar-item--harness { background: var(--layer-harness); border-color: var(--layer-harness); }
+.mapbar-item--loop    { background: var(--layer-loop);    border-color: var(--layer-loop); }
+.mapbar-item--prompt p, .mapbar-item--context p, .mapbar-item--harness p, .mapbar-item--loop p { color: #faf9f5; }
+
+/* ---------- 表紙(cover) ---------- */
+.page--cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.cover-kicker {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.page--cover .slide-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-cover-title);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-3);
+}
+.page--cover .slide-subtitle { font-size: var(--fs-cover-sub); color: var(--text-secondary); margin-bottom: var(--sp-5); line-height: 1.4; }
+.page--cover .cover-meta { font-size: var(--fs-body); color: var(--text-secondary); }
+
+/* ---------- まとめ(summary) ---------- */
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.summary-item .summary-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 56px;
+  line-height: 1.2;
+}
+.summary-item .summary-no--2 { color: var(--accent-2); }
+.summary-item .summary-no--3 { color: var(--accent-3); }
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); max-width: 940px; }
+
+/* ---------- アジェンダ(縦リスト) ---------- */
+.agenda-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: 14px 0; border-bottom: 1px solid var(--line); }
+.agenda-no { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; min-width: 120px; line-height: 1.25; }
+.agenda-no--1 { color: var(--accent); }
+.agenda-no--2 { color: var(--accent-2); }
+.agenda-no--3 { color: var(--accent-3); }
+.agenda-no--4 { color: var(--layer-loop); }
+.agenda-no--5 { color: var(--accent); }
+.agenda-text { font-size: var(--fs-body); line-height: 1.35; padding-top: 4px; max-width: 900px; }
+
+/* ---------- 箇条書き ---------- */
+.bullet-list { list-style-position: outside; padding-left: 28px; }
+.bullet-list li { font-size: var(--fs-body-sm); line-height: var(--lh-body); margin-bottom: var(--sp-1); }
+.bullet-list li b { font-weight: 700; }
+
+/* ---------- カード(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.card--tight { padding: var(--sp-3); }
+.card .card-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent); margin-bottom: var(--sp-1); }
+.card .card-no--2 { color: var(--accent-2); }
+.card .card-no--3 { color: var(--accent-3); }
+.card .card-title { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--text); margin-bottom: var(--sp-2); }
+.card .card-title--sm { font-size: var(--fs-body); }
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+
+/* ---------- 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.compare-col .compare-label { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; margin-bottom: var(--sp-3); }
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after  { border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+
+/* ---------- フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-2); text-align: center; }
+.flow-step .flow-step-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); margin-bottom: var(--sp-1); }
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); line-height: 1.4; }
+.flow-arrow { font-size: var(--fs-subheading); color: var(--accent); font-family: var(--font-heading); font-weight: 700; }
+.flow-down { text-align: center; font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--accent); margin: var(--sp-1) 0; }
+
+/* ---------- ロジックツリー(tree) ---------- */
+.tree-canvas { position: relative; height: 380px; }
+.tree-node { position: absolute; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-2) var(--sp-3); }
+.tree-node p { font-size: var(--fs-body-sm); font-weight: 700; }
+.tree-node p.tree-sub { font-size: var(--fs-caption); color: var(--text-secondary); font-weight: 400; margin-top: 4px; line-height: 1.45; }
+.tree-node--root { border-color: var(--accent); border-width: 3px; }
+.tree-line { position: absolute; }
+.tree-line--h { border-top: 2px solid var(--text-secondary); }
+.tree-line--v { border-left: 2px solid var(--text-secondary); }
+
+/* ---------- 対話再現(chat) ---------- */
+.ch-thread { display: flex; flex-direction: column; gap: 10px; width: 1080px; margin: 0 auto; }
+.ch-bubble { max-width: 720px; border-radius: var(--radius-card); padding: 10px 20px; }
+.ch-bubble--user { align-self: flex-end; background: var(--muted-bg); border: 2px solid var(--card-border); }
+.ch-bubble--ai { align-self: flex-start; background: var(--card-bg); border: 2px solid var(--card-border); }
+.ch-speaker { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 2px; }
+.ch-bubble--user .ch-speaker { color: var(--accent); }
+.ch-bubble--ai .ch-speaker { color: var(--accent-2); }
+.ch-text { font-size: var(--fs-caption); line-height: 1.5; }
+.ch-note { font-size: var(--fs-footnote); color: var(--text-secondary); margin-top: 4px; }
+
+/* ---------- 入れ子(layers・同心) ---------- */
+.nest-canvas { position: relative; height: 380px; }
+.nest-box { position: absolute; border-radius: var(--radius-card); }
+.nest-box p { font-family: var(--font-heading); font-weight: 700; padding: 10px 18px; }
+.nest-box p.nest-sub { font-weight: 400; font-size: var(--fs-caption); color: var(--text-secondary); padding: 0 18px 8px; }
+.nest-outer { border: 3px solid var(--layer-harness); background: var(--muted-bg); }
+.nest-mid   { border: 3px solid var(--layer-context); background: var(--card-bg); }
+.nest-inner { border: 3px solid var(--layer-prompt); background: var(--muted-bg); text-align: center; }
+.nest-outer > p:first-child { color: var(--layer-harness); font-size: var(--fs-body-sm); }
+.nest-mid   > p:first-child { color: var(--layer-context); font-size: var(--fs-body-sm); }
+.nest-inner > p:first-child { color: var(--layer-prompt); font-size: var(--fs-body-sm); }
+
+/* PDCA(ループ)パネル */
+.pdca-panel { position: absolute; border: 3px solid var(--layer-loop); border-radius: var(--radius-card); background: var(--muted-bg); padding: var(--sp-3) var(--sp-3) var(--sp-2); }
+.pdca-head { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: var(--layer-loop); margin-bottom: 6px; }
+.pdca-item { background: var(--card-bg); border: 2px solid var(--layer-loop); border-radius: 8px; padding: 5px 16px; }
+.pdca-item p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; line-height: 1.2; }
+.pdca-arw { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin: 1px 0; line-height: 1; }
+.pdca-back { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin-top: 4px; }
+
+/* ---------- ループ7要素(横1列) ---------- */
+.loopseq { display: flex; gap: var(--sp-1); }
+.loop-box { flex: 1; background: var(--card-bg); border: 2px solid var(--accent); border-radius: var(--radius-card); padding: 16px 6px; text-align: center; }
+.loop-box p.loop-kata { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--accent); line-height: 1.3; }
+.loop-box p.loop-jp { font-size: var(--fs-footnote); color: var(--text-secondary); margin-top: 6px; line-height: 1.3; }
+.loop-return { margin-top: var(--sp-2); border: 2px solid var(--accent); border-radius: var(--radius-card); padding: 10px; text-align: center; background: var(--muted-bg); }
+.loop-return p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); }
+
+/* ---------- 強調バンド(演習) ---------- */
+.emph-band { background: var(--card-bg); border: 3px solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-4); text-align: center; }
+.emph-band p { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--accent); }
+
+/* ---------- dtable(divベースの表) ---------- */
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+
+/* S9 のみ: 4層ツリーを縦に圧縮(page--harness スコープ・他ページ不変) */
+.page--harness .tree-node { padding: 8px 24px; }
+.page--harness .tree-node p { line-height: 1.2; }
+.page--harness .tree-node p.tree-sub { margin-top: 2px; line-height: 1.4; }
+
+/* S6: 図名(図の見出し) */
+.fig-title { position: absolute; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+
+/* S7 のみ: 注釈付きプロンプト例(annotate型・行末ラベル) */
+.pp-block { background: var(--code-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 12px 24px; }
+.pp-line { display: flex; align-items: baseline; gap: var(--sp-2); line-height: 1.3; }
+.pp-code { font-family: var(--font-mono); font-size: var(--fs-body-sm); color: var(--code-text); white-space: pre; }
+.pp-code--head { color: var(--text-secondary); }
+.pp-code--key  { color: var(--accent); font-weight: 700; }
+.pp-note { margin-left: auto; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+/* ===== S9(あなたが仕込んで制御する)専用: .page--hcards スコープ ===== */
+.page--hcards .slide-heading { margin-bottom: 10px; }
+.page--hcards .key-message { margin-bottom: 12px; }
+.page--hcards .header-rule { margin-bottom: 12px; }
+.page--hcards .mapbar { margin-bottom: 12px; }
+.page--hcards .body-cap { margin-top: 4px; }
+.alt-seclabel { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+
+/* ① CLAUDE.md / skills の説明カード */
+.page--hcards .card--tight { padding: 16px 20px; }
+.page--hcards .card--tight .card-title { margin-bottom: 6px; }
+.ck-row { font-size: var(--fs-caption); line-height: 1.35; margin-top: 4px; }
+.ck-row strong { color: var(--accent); font-weight: 700; }
+.ck-row strong.ck-path { font-family: var(--font-mono); color: var(--text); }
+
+/* ② 実行を制御する設定(囲みの図) */
+.exec-frame { border: 2px solid var(--accent); background: var(--muted-bg); border-radius: var(--radius-card); padding: 10px 16px 12px; }
+.exec-frame-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.exec-row { display: flex; align-items: center; gap: 8px; }
+.exec-node { background: var(--card-bg); border: 2px solid var(--accent); border-radius: var(--radius-card); padding: 12px 8px; text-align: center; width: 152px; }
+.exec-node p { font-family: var(--font-heading); font-size: var(--fs-body); font-weight: 700; }
+.exec-gate { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 10px 8px; text-align: center; }
+.exec-gate .gate-t { font-family: var(--font-heading); font-size: var(--fs-body); font-weight: 700; color: var(--accent); }
+.exec-gate .gate-s { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: 4px; line-height: 1.25; white-space: nowrap; }
+/* ---------- 章扉(section) ---------- */
+.page--section { display: flex; flex-direction: column; justify-content: center; }
+.section-number { font-family: var(--font-heading); font-size: var(--fs-section-no); font-weight: 700; color: var(--accent); line-height: 1; margin-bottom: var(--sp-3); }
+.section-title { font-family: var(--font-heading); font-size: var(--fs-heading); font-weight: 700; line-height: var(--lh-heading); }
+.section-lead { font-size: var(--fs-body); color: var(--text-secondary); margin-top: var(--sp-3); max-width: 900px; }
+</style>
+</head>
+<body data-theme="claude-dark">
+
+<!-- ============ S1: 表紙(cover) ============ -->
+<div class="page page--cover">
+  <p class="cover-kicker">CLAUDE CODE 導入セミナー</p>
+  <h1 class="slide-title">まず、一つ動かす</h1>
+  <p class="slide-subtitle">コードを書かずに、自分の仕事を<br>Claude Code に『頼む』はじめの一歩</p>
+  <p class="cover-meta">2026年7月 ／ 導入セミナー（全60分）</p>
+</div>
+
+<!-- ============ S2: ショーケース(cards 2枚) ============ -->
+<div class="page">
+  <h2 class="slide-heading">コードを書かずに作った、二つの実物</h2>
+  <p class="key-message">コードを書かず、日本語で頼んで作った</p>
+  <div class="header-rule"></div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no">TOOL 01</p>
+      <p class="card-title">音声入力ツール</p>
+      <p class="card-text">話した言葉をそのまま文字に。<br>ローカルLLMで、手元のPCだけで動く。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">TOOL 02</p>
+      <p class="card-title">イベントログ＋タスク管理</p>
+      <p class="card-text">現場の気づきをすぐ記録。<br>後から探して優先度を一覧に（実務POC中）。</p>
+    </div>
+  </div>
+  <p class="body-cap">共通点は、一行も書かず、やりたいことを日本語で『頼んだ』だけ。</p>
+  <p class="page-number">2</p>
+</div>
+
+<!-- ============ S3: 要点3つ(summary) ============ -->
+<div class="page">
+  <h2 class="slide-heading">今日のゴール</h2>
+  <p class="key-message">日本語が話せれば、AIで何でもできる</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">1</p>
+    <p class="summary-text">Claude Code の仕組みと、上手に使う4つの工夫を知る</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">2</p>
+    <p class="summary-text">発散を防ぐ「段取り」の考え方を身につける</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--3">3</p>
+    <p class="summary-text">自分の仕事を一つ、AIで実際に動かしてみる</p>
+  </div>
+  <p class="page-number">3</p>
+</div>
+
+<!-- ============ S4: アジェンダ(縦リスト) ============ -->
+<div class="page">
+  <h2 class="slide-heading">Agenda</h2>
+  <p class="key-message">動かせる→仕組み→段取り→お手本→ワーク</p>
+  <div class="header-rule"></div>
+  <div class="agenda-item">
+    <p class="agenda-no agenda-no--1">第1章</p>
+    <p class="agenda-text">あなたも、自分の仕事を一つ動かせる</p>
+  </div>
+  <div class="agenda-item">
+    <p class="agenda-no agenda-no--2">第2章</p>
+    <p class="agenda-text">情報の伝え方・動かし方（プロンプト／コンテキスト／ハーネス／ループ）</p>
+  </div>
+  <div class="agenda-item">
+    <p class="agenda-no agenda-no--3">第3章</p>
+    <p class="agenda-text">発散を防ぐ「段取り」— スペックドリブン開発（SDD）</p>
+  </div>
+  <div class="agenda-item">
+    <p class="agenda-no agenda-no--4">第4章</p>
+    <p class="agenda-text">デモンストレーション — 目の前で一つ作る</p>
+  </div>
+  <div class="agenda-item">
+    <p class="agenda-no agenda-no--5">第5章</p>
+    <p class="agenda-text">まず一つ、作ってみる</p>
+  </div>
+  <p class="body-cap">ゴール＝最後のワークで1つ着手。完成は持ち帰り、詰まったら都度相談でOK。</p>
+  <p class="page-number">4</p>
+</div>
+
+<!-- ============ 章扉: 第2章 ============ -->
+<div class="page page--section">
+  <p class="section-number">第2章</p>
+  <h2 class="section-title">どう動くのか<br>― 基本の流れと、上手に使う4つの工夫</h2>
+  <p class="section-lead">4つの工夫は、AIに任せる業務プロセスの設計。</p>
+</div>
+
+<!-- ============ S5: 基本の流れ(flow 5ステップ) ============ -->
+<div class="page">
+  <h2 class="slide-heading">基本の流れ</h2>
+  <p class="key-message">頼む→計画→実行→差分を確認して承認</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 1</p>
+      <p class="flow-step-text">頼む</p>
+      <p class="flow-step-sub">やりたいことを<br>日本語で</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 2</p>
+      <p class="flow-step-text">計画</p>
+      <p class="flow-step-sub">段取りを立てて<br>見せる</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 3</p>
+      <p class="flow-step-text">実行</p>
+      <p class="flow-step-sub">実際に<br>手を動かす</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 4</p>
+      <p class="flow-step-text">差分を確認</p>
+      <p class="flow-step-sub">新旧＆理想と<br>現実の見比べ</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 5</p>
+      <p class="flow-step-text">承認</p>
+      <p class="flow-step-sub">中身を見て<br>OKを出す</p>
+    </div>
+  </div>
+  <p class="body-cap">差分＝①変更前後の新旧比較 ②自分の理想とAIの出した現実のギャップ。要所で必ず人の目が入る。</p>
+  <p class="page-number">5</p>
+</div>
+
+<!-- ============ S6: 4つの工夫(入れ子＋PDCA) ============ -->
+<div class="page">
+  <h2 class="slide-heading">上手に使う4つの工夫</h2>
+  <p class="key-message">4つの工夫は、AIに任せる業務プロセスの設計</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item mapbar-item--prompt"><p>プロンプト</p></div>
+    <div class="mapbar-item mapbar-item--context"><p>コンテキスト</p></div>
+    <div class="mapbar-item mapbar-item--harness"><p>ハーネス</p></div>
+    <div class="mapbar-item mapbar-item--loop"><p>ループ</p></div>
+  </div>
+  <div class="nest-canvas" style="height: 340px;">
+    <p class="fig-title" style="left: 0px; top: 0px;">図1｜情報の伝え方</p>
+    <p class="fig-title" style="left: 660px; top: 0px;">図2｜全体の流れの設計</p>
+    <div class="nest-box nest-outer" style="left: 0px; top: 36px; width: 560px; height: 258px;">
+      <p>ハーネス｜常設の仕掛け</p>
+    </div>
+    <div class="nest-box nest-mid" style="left: 70px; top: 98px; width: 420px; height: 165px;">
+      <p>コンテキスト｜渡す情報</p>
+    </div>
+    <div class="nest-box nest-inner" style="left: 150px; top: 156px; width: 260px; height: 84px;">
+      <p>プロンプト｜頼み方</p>
+    </div>
+    <p class="body-cap" style="position:absolute; left:0px; top:302px; margin:0; width:560px;">プロンプト⊆コンテキスト⊆ハーネスの入れ子。</p>
+
+    <div class="pdca-panel" style="left: 660px; top: 36px; width: 470px;">
+      <p class="pdca-head">ループ＝PDCAで回して良くする</p>
+      <div class="pdca-item"><p>計画 ＝ 段取り</p></div>
+      <p class="pdca-arw">↓</p>
+      <div class="pdca-item"><p>実行 ＝ 頼む</p></div>
+      <p class="pdca-arw">↓</p>
+      <div class="pdca-item"><p>確認 ＝ 差分を見る</p></div>
+      <p class="pdca-arw">↓</p>
+      <div class="pdca-item"><p>改善 ＝ 直して寄せる</p></div>
+      <p class="pdca-back">↩ 何度も回して狙いに寄せる</p>
+    </div>
+  </div>
+  <p class="page-number">6</p>
+</div>
+
+<!-- ============ S7: プロンプト地図(tree) ============ -->
+<div class="page page--prompt">
+  <h2 class="slide-heading">プロンプト・エンジニアリング ― 頼み方</h2>
+  <p class="key-message">頼み方の工夫＝具体・お手本・役割・構造化</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item mapbar-item--prompt"><p>プロンプト</p></div>
+    <div class="mapbar-item"><p>コンテキスト</p></div>
+    <div class="mapbar-item"><p>ハーネス</p></div>
+    <div class="mapbar-item"><p>ループ</p></div>
+  </div>
+  <div class="pp-block">
+    <div class="pp-line"><p class="pp-code pp-code--head"># 役割</p><p class="pp-note">指示の構造化（見出しで整理）</p></div>
+    <div class="pp-line"><p class="pp-code">あなたは製造現場の品質管理を助けるアシスタントです。</p><p class="pp-note">ロールプロンプティング</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--head"># 背景・目的</p><p class="pp-note">背景・目的を伝える（コンテキスト伝達）</p></div>
+    <div class="pp-line"><p class="pp-code">点検記録CSVから、設備ごと・月ごとの異常件数を集計したい。</p></div>
+    <div class="pp-line"><p class="pp-code">結論→根拠→例→まとめの順で簡潔に。</p><p class="pp-note">PREP法</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--head"># 入力</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--key">@点検記録.csv</p><p class="pp-note">＠でファイル参照（コンテキスト添付）</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--head"># 出力（お手本）</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--head">| 設備 | 月 | 異常件数 |</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--key">| 設備A | 7月 | 3件 |</p><p class="pp-note">フューショット（お手本を1つ示す）</p></div>
+    <div class="pp-line"><p class="pp-code pp-code--key">/format-table</p><p class="pp-note">スラッシュコマンド（定型指示を呼ぶ）</p></div>
+  </div>
+  <p class="page-number">7</p>
+</div>
+
+<!-- ============ S8: コンテキスト地図(cards 1×4) ============ -->
+<div class="page page--context">
+  <h2 class="slide-heading">コンテキスト・エンジニアリング ― 渡す情報</h2>
+  <p class="key-message">渡す情報の設計＝必要な情報を十分な量で適切なタイミングで</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item"><p>プロンプト</p></div>
+    <div class="mapbar-item mapbar-item--context"><p>コンテキスト</p></div>
+    <div class="mapbar-item"><p>ハーネス</p></div>
+    <div class="mapbar-item"><p>ループ</p></div>
+  </div>
+  <div class="card-row">
+    <div class="card card--tight">
+      <p class="card-no">01</p>
+      <p class="card-title card-title--sm">＠ファイル参照</p>
+      <p class="card-text">必要なファイルを ＠ で名指しして渡す。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no">02</p>
+      <p class="card-title card-title--sm">RAG（検索）</p>
+      <p class="card-text">社内文書を検索し、根拠として渡す。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no">03</p>
+      <p class="card-title card-title--sm">MCP接続</p>
+      <p class="card-text">外部のデータやシステムにつなぐ接続口。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">04</p>
+      <p class="card-title card-title--sm">自動で載る文脈</p>
+      <p class="card-text">システムプロンプト・メモリ・CLAUDE.md・環境情報も渡っている。</p>
+    </div>
+  </div>
+  <div class="voice-note" style="margin-top: 16px; border-left: 5px solid var(--accent); background: var(--muted-bg); border-radius: 8px; padding: 12px 24px;">
+    <p style="font-size: var(--fs-body-sm); line-height: 1.4;"><strong style="color: var(--accent);">＋ 音声入力（実用手法）</strong>　背景・経緯を声でまとめて速く渡せる。量と速さが一気に上がる。</p>
+  </div>
+  <p class="page-number">8</p>
+</div>
+
+<!-- ============ S9: ハーネス地図(あなたが仕込んで制御する) ============ -->
+<div class="page page--harness page--hcards">
+  <h2 class="slide-heading">ハーネス ― あなたが仕込んで制御する</h2>
+  <p class="key-message">常設の指示と安全柵で、Claude Code を制御する</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item"><p>プロンプト</p></div>
+    <div class="mapbar-item"><p>コンテキスト</p></div>
+    <div class="mapbar-item mapbar-item--harness"><p>ハーネス</p></div>
+    <div class="mapbar-item"><p>ループ</p></div>
+  </div>
+
+  <p class="alt-seclabel">① 指示・手順を常設する（あなたが書く2つ）　　読む順：グローバル → プロジェクト（後に読むほうが強く効く）</p>
+  <div class="card-row">
+    <div class="card card--tight">
+      <p class="card-title card-title--sm">CLAUDE.md</p>
+      <p class="ck-row"><strong>What</strong>　規約・ビルド/テスト手順・常設ルール</p>
+      <p class="ck-row"><strong>When</strong>　毎セッション冒頭に全文</p>
+      <p class="ck-row"><strong>How</strong>　“お願い”（強制なし・止めるなら hooks）</p>
+      <p class="ck-row"><strong>Where</strong>　<strong class="ck-path">~/.claude/CLAUDE.md</strong> → <strong class="ck-path">./CLAUDE.md</strong></p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-title card-title--sm">skills</p>
+      <p class="ck-row"><strong>What</strong>　繰り返す手順を SKILL.md に</p>
+      <p class="ck-row"><strong>When</strong>　関連時に自動 or /名前</p>
+      <p class="ck-row"><strong>How</strong>　説明文は常時・本体は使う時だけ</p>
+      <p class="ck-row"><strong>Where</strong>　<strong class="ck-path">~/.claude/skills/</strong> → <strong class="ck-path">.claude/skills/</strong></p>
+    </div>
+  </div>
+
+  <p class="alt-seclabel" style="margin-top: 6px;">② 実行を制御し、安全にするガードレール、判断を自動化するルール</p>
+  <div class="exec-frame">
+    <p class="exec-frame-label">settings.json（グローバル/プロジェクトあり・Managed ＞ Project ＞ User）</p>
+    <div class="exec-row">
+      <div class="exec-node"><p>依頼を実行</p></div>
+      <p class="flow-arrow">→</p>
+      <div class="exec-gate">
+        <p class="gate-t">hooks</p>
+        <p class="gate-s">門番・止める</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="exec-gate">
+        <p class="gate-t">権限モード</p>
+        <p class="gate-s">毎回確認 or 自動</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="exec-gate">
+        <p class="gate-t">サンドボックス</p>
+        <p class="gate-s">コマンド実行を隔離</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="exec-node"><p>実行される</p></div>
+    </div>
+  </div>
+  <p class="page-number">9</p>
+</div>
+
+<!-- ============ S10: ループ地図(横1列7要素) ============ -->
+<div class="page page--loop">
+  <h2 class="slide-heading">ループ・エンジニアリング ― 回し方</h2>
+  <p class="key-message">回し方＝業務ループを設計して自動で回す</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item"><p>プロンプト</p></div>
+    <div class="mapbar-item"><p>コンテキスト</p></div>
+    <div class="mapbar-item"><p>ハーネス</p></div>
+    <div class="mapbar-item mapbar-item--loop"><p>ループ</p></div>
+  </div>
+  <div class="loopseq">
+    <div class="loop-box"><p class="loop-kata">Trigger</p></div>
+    <div class="loop-box"><p class="loop-kata">Input</p></div>
+    <div class="loop-box"><p class="loop-kata">Action</p></div>
+    <div class="loop-box"><p class="loop-kata">State</p></div>
+    <div class="loop-box"><p class="loop-kata">Verification</p></div>
+    <div class="loop-box"><p class="loop-kata">Escalation</p></div>
+    <div class="loop-box"><p class="loop-kata">Stop&nbsp;Condition</p></div>
+  </div>
+  <div class="loop-return">
+    <p>↺ 一巡して循環 — 100点の条件を先に決めれば、合格まで自動で回って閉じる</p>
+  </div>
+  <p class="body-cap">「ループ／7点セット」は平易化の枠（一般の呼称。公式は agentic／feedback loop）。</p>
+  <p class="page-number">10</p>
+</div>
+
+<!-- ============ 章扉: 第3章 ============ -->
+<div class="page page--section">
+  <p class="section-number">第3章</p>
+  <h2 class="section-title">発散の罠と「段取り八分」（SDD）</h2>
+  <p class="section-lead">先に決めるほど、狙った物ができる。</p>
+</div>
+
+<!-- ============ S11: 発散の失敗(chat・一人称の語り) ============ -->
+<div class="page">
+  <h2 class="slide-heading">思いつきで足したら、使えない物ができた</h2>
+  <p class="key-message">適当に足すと、機能が発散して使えなくなる</p>
+  <div class="header-rule"></div>
+  <div class="ch-thread">
+    <div class="ch-bubble ch-bubble--user">
+      <p class="ch-speaker">登壇者（当時）</p>
+      <p class="ch-text">これも便利そう、ついでに追加して</p>
+    </div>
+    <div class="ch-bubble ch-bubble--ai">
+      <p class="ch-speaker">AI</p>
+      <p class="ch-text">承知しました。機能を追加しました。</p>
+      <p class="ch-note">↑ 言語化されない要件を、AIが推測で埋めていく</p>
+    </div>
+    <div class="ch-bubble ch-bubble--user">
+      <p class="ch-speaker">登壇者（当時）</p>
+      <p class="ch-text">あれもこれも…（次々と付け足す）</p>
+    </div>
+    <div class="ch-bubble ch-bubble--ai">
+      <p class="ch-speaker">AI</p>
+      <p class="ch-text">さらに追加しました。</p>
+      <p class="ch-note">↑ 目的がぼやけ、何のためのツールか説明できない物に</p>
+    </div>
+  </div>
+  <p class="body-cap">一番つらいのは時間より、苦労して作り込んだ労力そのものが無駄になったこと。</p>
+  <p class="page-number">11</p>
+</div>
+
+<!-- ============ S12: 段取り八分=SDD(要件の固め方3ステップ+決める中身) ============ -->
+<div class="page">
+  <h2 class="slide-heading">段取り八分 ― スペックドリブン開発（SDD）</h2>
+  <p class="key-message">先に決めるほど、狙った物ができる</p>
+  <div class="header-rule"></div>
+  <p class="body-lead" style="margin-bottom: 10px;">作る前に要件を固める＝SDD。現場の段取り八分と同じ。</p>
+
+  <p class="alt-seclabel">要件の固め方 ― 3ステップ</p>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 1</p>
+      <p class="flow-step-text">AIに質問させる</p>
+      <p class="flow-step-sub">「必要なことを質問して」<br>聞き役をAIに任せる</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 2</p>
+      <p class="flow-step-text">答えて渡しきる</p>
+      <p class="flow-step-sub">何のために・誰が使う・<br>今どう困っているか</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 3</p>
+      <p class="flow-step-text">requirements.md に整形</p>
+      <p class="flow-step-sub">やり取りをまとめ、<br>要件を1枚の文書にする</p>
+    </div>
+  </div>
+
+  <p class="alt-seclabel" style="margin-top: 6px;">決める中身 ― 2つ</p>
+  <div class="card-row">
+    <div class="card card--tight" style="padding: 10px 20px;">
+      <p class="card-title card-title--sm">作るもの</p>
+      <p class="card-text" style="font-size: var(--fs-caption); margin-top: 6px;">欲しい成果物を一文で<br>例：設備別・月次の異常件数を集計する表。</p>
+    </div>
+    <div class="card card--tight" style="padding: 10px 20px;">
+      <p class="card-title card-title--sm">作らないもの（Non-Goals）</p>
+      <p class="card-text" style="font-size: var(--fs-caption); margin-top: 6px;">範囲の外を先に明記<br>例：リアルタイム監視はしない。</p>
+    </div>
+  </div>
+  <p class="page-number">12</p>
+</div>
+
+<!-- ============ S13: 対比(compare) + SDDの流れ(flow 4工程) ============ -->
+<div class="page">
+  <h2 class="slide-heading">ダメな頼み方 vs 段取りした頼み方</h2>
+  <p class="key-message">同じAIでも、段取りで結果が変わる</p>
+  <div class="header-rule"></div>
+  <div class="compare-row">
+    <div class="compare-col compare-col--before" style="padding: 20px 24px;">
+      <p class="compare-label" style="margin-bottom: 12px;">悪い頼み方</p>
+      <ul class="bullet-list">
+        <li>「点検データをいい感じに整理して」</li>
+        <li>何が「いい感じ」かAIが推測で埋める</li>
+        <li>直すたび別方向へ発散し、収束しない</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after" style="padding: 20px 24px;">
+      <p class="compare-label" style="margin-bottom: 12px;">段取りした頼み方</p>
+      <ul class="bullet-list">
+        <li>欲しい成果物を一文で言い切る</li>
+        <li>やらないこと（Non-Goals）を明記</li>
+        <li>こう出してほしい例を一つ添える</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="alt-seclabel" style="margin-top: 14px;">SDD＝仕様を「唯一の正解」にして進める</p>
+  <div class="flow-row">
+    <div class="flow-step" style="padding: 12px 8px;">
+      <p class="flow-step-text">Specify</p>
+      <p class="flow-step-sub">仕様を決める</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step" style="padding: 12px 8px;">
+      <p class="flow-step-text">Plan</p>
+      <p class="flow-step-sub">計画を立てる</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step" style="padding: 12px 8px;">
+      <p class="flow-step-text">Tasks</p>
+      <p class="flow-step-sub">作業に分ける</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step" style="padding: 12px 8px;">
+      <p class="flow-step-text">Implement</p>
+      <p class="flow-step-sub">作る</p>
+    </div>
+  </div>
+  <p class="body-cap">公式のガイドも「まずAIに質問させて仕様を書く」を推奨 ― 前ページのやり方と同じ。</p>
+  <p class="page-number">13</p>
+</div>
+
+<!-- ============ 章扉: 第4章 ============ -->
+<div class="page page--section">
+  <p class="section-number">第4章</p>
+  <h2 class="section-title">まず一つ、目の前で動かす</h2>
+  <p class="section-lead">小さく可逆な一つを選び、危ういものは止める。</p>
+</div>
+
+<!-- ============ S14: 選び方(cards 3枚) ============ -->
+<div class="page">
+  <h2 class="slide-heading">最初の一歩の選び方</h2>
+  <p class="key-message">最初は小さく・可逆・自己完結な一つ</p>
+  <div class="header-rule"></div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no">01</p>
+      <p class="card-title">小さく</p>
+      <p class="card-text">一つの作業に閉じている。<br>一文で言えるならそのまま頼む。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">02</p>
+      <p class="card-title">可逆</p>
+      <p class="card-text">気に入らなければ、<br>すぐ元の状態に戻せる。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">03</p>
+      <p class="card-title">自己完結</p>
+      <p class="card-text">他の仕事や他の人に<br>影響が波及しない。</p>
+    </div>
+  </div>
+  <p class="body-cap">製造例＝点検記録の集計、様式の変換、散らばったデータの整理など。生産設備の制御は選ばない。</p>
+  <p class="page-number">14</p>
+</div>
+
+<!-- ============ S15: 止めどころ(cards 3枚) ============ -->
+<div class="page">
+  <h2 class="slide-heading">止めどころ — 危ういものは触らない</h2>
+  <p class="key-message">秘密情報・本番・決済に触れたら止める</p>
+  <div class="header-rule"></div>
+  <p class="body-lead">権限は既定で毎回確認。承認前に必ず差分を読む。</p>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no">触らない 01</p>
+      <p class="card-title card-title--sm">客先データ</p>
+      <p class="card-text">お客様から預かった情報には手を出さない。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">触らない 02</p>
+      <p class="card-title card-title--sm">生産設備の本番</p>
+      <p class="card-text">実際に稼働している本番環境は動かさない。</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">触らない 03</p>
+      <p class="card-title card-title--sm">個人情報</p>
+      <p class="card-text">個人情報を含むものは今日は扱わない。</p>
+    </div>
+  </div>
+  <p class="body-cap">外部に影響する操作は自動承認されない。迷ったら、選ばない方を選ぶ。</p>
+  <p class="page-number">15</p>
+</div>
+
+<!-- ============ S16: お手本実演(flow 2段) ============ -->
+<div class="page">
+  <h2 class="slide-heading">お手本実演 — 目の前で一つ作る</h2>
+  <p class="key-message">段取り→頼む→寄せるを見れば、あなたも動かせる</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step"><p class="flow-step-no">1</p><p class="flow-step-text">段取り</p><p class="flow-step-sub">1枚で決める</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">2</p><p class="flow-step-text">頼む</p><p class="flow-step-sub">日本語で伝える</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">3</p><p class="flow-step-text">計画</p><p class="flow-step-sub">AIが提示</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">4</p><p class="flow-step-text">実行</p><p class="flow-step-sub">手を動かす</p></div>
+  </div>
+  <p class="flow-down">↓</p>
+  <div class="flow-row">
+    <div class="flow-step"><p class="flow-step-no">5</p><p class="flow-step-text">差分確認</p><p class="flow-step-sub">狙い通りか見る</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">6</p><p class="flow-step-text">承認</p><p class="flow-step-sub">中身を見てOK</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">7</p><p class="flow-step-text">直す</p><p class="flow-step-sub">一度だけ寄せる</p></div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step"><p class="flow-step-no">8</p><p class="flow-step-text">完成</p><p class="flow-step-sub">実質、数分で</p></div>
+  </div>
+  <p class="body-cap">裏では CLAUDE.md の常設ルールも自然に効く。登壇者も最初はこの小ささから始めた。</p>
+  <p class="page-number">16</p>
+</div>
+
+<!-- ============ 章扉: 第5章 ============ -->
+<div class="page page--section">
+  <p class="section-number">第5章</p>
+  <h2 class="section-title">やってみる、そして持ち帰る</h2>
+  <p class="section-lead">今日、あなたの一個目が動き出す。</p>
+</div>
+
+<!-- ============ S17: 各自ワーク(steps 3つ＋バンド) ============ -->
+<div class="page">
+  <h2 class="slide-heading">各自ワーク — 選んで・段取りして・頼む</h2>
+  <p class="key-message">自分の小さな一つを選び、今ここで動かす</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 1</p>
+      <p class="flow-step-text">選ぶ</p>
+      <p class="flow-step-sub">小さく・可逆・自己完結</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 2</p>
+      <p class="flow-step-text">段取り</p>
+      <p class="flow-step-sub">1枚（作る／作らない／例）</p>
+    </div>
+    <p class="flow-arrow">→</p>
+    <div class="flow-step">
+      <p class="flow-step-no">STEP 3</p>
+      <p class="flow-step-text">頼む→寄せる</p>
+      <p class="flow-step-sub">差分を見て一言直す</p>
+    </div>
+  </div>
+  <div class="emph-band" style="margin-top: var(--sp-4);">
+    <p>実施15分 ／ 完成でなく「着手」が今日の目標</p>
+  </div>
+  <p class="body-cap">客先データ・本番設備・個人情報は触らない。詰まったら遠慮なく相談を。</p>
+  <p class="page-number">17</p>
+</div>
+
+<!-- ============ S18: まとめ(summary) ============ -->
+<div class="page">
+  <h2 class="slide-heading">振り返りとまとめ</h2>
+  <p class="key-message">まず一つ動かす。頼み方を磨けば現場も変わる</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">1</p>
+    <p class="summary-text">完璧に理解してからでなく、まず一つ動かす</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--2">2</p>
+    <p class="summary-text">Claude Code は「書く道具」でなく「頼む道具」</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no summary-no--3">3</p>
+    <p class="summary-text">4つの工夫＝業務プロセスの設計。持ち帰って深める</p>
+  </div>
+  <p class="page-number">18</p>
+</div>
+
+<!-- ============ 付録: ハーネス 機能別4層ツリー(本編外) ============ -->
+<div class="page page--harness">
+  <h2 class="slide-heading">【付録】ハーネス＝機能別の4層（別表現）</h2>
+  <p class="key-message">常設の仕掛け＝指示・制御・安全・接続</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-item"><p>プロンプト</p></div>
+    <div class="mapbar-item"><p>コンテキスト</p></div>
+    <div class="mapbar-item mapbar-item--harness"><p>ハーネス</p></div>
+    <div class="mapbar-item"><p>ループ</p></div>
+  </div>
+  <div class="tree-canvas" style="height: 300px;">
+    <div class="tree-node tree-node--root" style="left: 0px; top: 114px; width: 280px;">
+      <p>ハーネス</p>
+      <p class="tree-sub">あらかじめ仕込む層</p>
+    </div>
+    <div class="tree-line tree-line--h" style="left: 282px; top: 149px; width: 28px;"></div>
+    <div class="tree-line tree-line--v" style="left: 310px; top: 35px; height: 228px;"></div>
+    <div class="tree-line tree-line--h" style="left: 310px; top: 35px; width: 50px;"></div>
+    <div class="tree-line tree-line--h" style="left: 310px; top: 111px; width: 50px;"></div>
+    <div class="tree-line tree-line--h" style="left: 310px; top: 187px; width: 50px;"></div>
+    <div class="tree-line tree-line--h" style="left: 310px; top: 263px; width: 50px;"></div>
+    <div class="tree-node" style="left: 360px; top: 0px; width: 780px;">
+      <p>指示・ルール層</p>
+      <p class="tree-sub">CLAUDE.md ／ skills ／「/」コマンド ／ システムプロンプト</p>
+    </div>
+    <div class="tree-node" style="left: 360px; top: 76px; width: 780px;">
+      <p>実行制御層</p>
+      <p class="tree-sub">hooks（必ず走る門番）</p>
+    </div>
+    <div class="tree-node" style="left: 360px; top: 152px; width: 780px;">
+      <p>安全・境界層</p>
+      <p class="tree-sub">権限モード ／ サンドボックス</p>
+    </div>
+    <div class="tree-node" style="left: 360px; top: 228px; width: 780px;">
+      <p>外部接続層</p>
+      <p class="tree-sub">MCP ／ 土台＝settings.json（上記を宣言）</p>
+    </div>
+  </div>
+  <p class="body-cap">組み合わせて効く。CLAUDE.md は強制命令でなく、あくまで参考にする文脈。</p>
+  <p class="page-number">付録</p>
+</div>
+
+</body>
+</html>

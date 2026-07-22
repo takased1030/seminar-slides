@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>セミナー資料</title>
+<style>
+  :root { --fg:#1a1a1a; --muted:#6b7280; --accent:#e8590c; --line:#e5e7eb; --bg:#fafafa; --card:#fff; }
+  @media (prefers-color-scheme: dark){
+    :root{ --fg:#e9e9e9; --muted:#9ca3af; --accent:#ff8f4d; --line:#2a2a2a; --bg:#141414; --card:#1d1d1d; }
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+        color:var(--fg); background:var(--bg); line-height:1.6; padding:48px 20px; }
+  .wrap{ max-width:760px; margin:0 auto; }
+  header{ margin-bottom:32px; }
+  header h1{ font-size:1.6rem; }
+  header p{ color:var(--muted); margin-top:4px; font-size:.9rem; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px;
+         padding:20px 22px; margin-bottom:14px; }
+  .card .date{ color:var(--muted); font-size:.8rem; letter-spacing:.02em; }
+  .card h2{ font-size:1.1rem; margin:4px 0 14px; }
+  .links{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn{ display:inline-block; text-decoration:none; font-size:.9rem; padding:8px 16px;
+        border-radius:8px; background:var(--accent); color:#fff; }
+  .btn.ghost{ background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  footer{ color:var(--muted); font-size:.78rem; margin-top:28px; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>セミナー資料</h1>
+      <p>各回のスライド(ブラウザ表示)と PDF。PowerPoint が要る回は別途配布。</p>
+    </header>
+    
+    <article class="card">
+      <div class="date">2026-07-18</div>
+      <h2>まず、一つ動かす — Claude Code 導入セミナー</h2>
+      <div class="links"><a class="btn" href="20260718_claude-code/slides.html">スライドを開く</a></div>
+    </article>
+    <article class="card">
+      <div class="date">2026-07-14</div>
+      <h2>その「うまくいかない」は、どの層の問題か</h2>
+      <div class="links"><a class="btn" href="20260714_ai-flow-design/slides.html">スライドを開く</a> <a class="btn ghost" href="20260714_ai-flow-design/slides.pdf">PDF</a></div>
+    </article>
+    <article class="card">
+      <div class="date">2026-07-13</div>
+      <h2>生成AI活用入門 — 開発部</h2>
+      <div class="links"><a class="btn" href="20260713_genai-intro/slides.html">スライドを開く</a> <a class="btn ghost" href="20260713_genai-intro/slides.pdf">PDF</a></div>
+    </article>
+    <article class="card">
+      <div class="date">2026-07-13</div>
+      <h2>なぜ AI の答えはバラつくのか — コンテキストエンジニアリング入門</h2>
+      <div class="links"><a class="btn" href="20260713_context-engineering/slides.html">スライドを開く</a> <a class="btn ghost" href="20260713_context-engineering/slides.pdf">PDF</a></div>
+    </article>
+    <footer>create_seminar_skills から自動生成 / このページは検索エンジンに載せない設定です</footer>
+  </div>
+</body>
+</html>

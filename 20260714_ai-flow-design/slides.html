@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>その「うまくいかない」は、どの層の問題か</title>
+<style>
+/* ============================================================
+   デザイントークン(slide_designsystem/tokens.css と同期を保つこと)
+   ============================================================ */
+:root {
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+
+  /* html2pptx が注入する正規化CSSの変数を上書き(2026-07-13 実測):
+     注入CSSは p/ul/ol/li と h1-h6 に要素セレクタで Arial を直指定するため、
+     この2変数の上書き+下の p,li ルールの両方で Noto Sans JP を強制する */
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  /* サイズ階層(2026-07-13 ユーザー指示): タイトル > キーメッセージ > ボディ */
+  --fs-cover-title: 64px;
+  --fs-cover-sub:   30px;
+  --fs-heading:     48px;
+  --fs-subheading:  30px;
+  --fs-keymsg:      34px;
+  --fs-body:        24px;
+  --fs-body-sm:     22px;  /* カード・比較・表・コード等の詰め込み系ボディ */
+  --fs-caption:     18px;
+  --fs-footnote:    14px;  /* ページ番号等。10.5pt以下=html2pptx下端マージン検査の対象外 */
+  --fs-section-no:  104px;
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  --sp-1: 8px;  --sp-2: 16px;  --sp-3: 24px;
+  --sp-4: 32px; --sp-5: 48px;  --sp-6: 64px;
+
+  --slide-pad: 64px;
+  --radius-card: 12px;
+  --border-w: 2px;
+}
+/* ===== 案B: claude-gray(落ち着いた灰紙)= 既定 ===== */
+body,
+body[data-theme="claude-gray"] {
+  --bg:             #e8e6dc;
+  --text:           #141413;
+  --text-secondary: #63615a;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #faf9f5;
+  --card-border:    #d5d3c8;
+  --code-bg:        #141413;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #dedbd0;
+  --line:           #d5d3c8;
+  --muted-bg:       #dedbd0;
+  --shadow-color:   #d5d3c8;
+  --venn-a:         #6a9bcc73;
+  --venn-b:         #788c5d73;
+}
+/* ===== 案C: claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+  --venn-a:         #6a9bcc8c;
+  --venn-b:         #788c5d8c;
+}
+/* ===== 案D: ink-citrus(エディトリアル。インクの輪郭+柑橘) ===== */
+body[data-theme="ink-citrus"] {
+  --bg:             #fbfbf7;
+  --text:           #20222c;
+  --text-secondary: #5f6370;
+  --accent:         #e8590c;
+  --accent-2:       #2b6cb0;
+  --accent-3:       #37803b;
+  --card-bg:        #fdfdfa;
+  --card-border:    #20222c;
+  --code-bg:        #20222c;
+  --code-text:      #f4f4ef;
+  --table-head-bg:  #edede4;
+  --line:           #c9cad1;
+  --muted-bg:       #f0f0ea;
+  --shadow-color:   #20222c;
+  --venn-a:         #2b6cb066;
+  --venn-b:         #37803b66;
+}
+/* ===== 案F: cyber-terminal(端末風ダーク。緑+青+琥珀) ===== */
+body[data-theme="cyber-terminal"] {
+  --bg:             #0d1117;
+  --text:           #e6edf3;
+  --text-secondary: #8b949e;
+  --accent:         #3fb950;
+  --accent-2:       #58a6ff;
+  --accent-3:       #d29922;
+  --card-bg:        #161b22;
+  --card-border:    #30363d;
+  --code-bg:        #010409;
+  --code-text:      #e6edf3;
+  --table-head-bg:  #161b22;
+  --line:           #30363d;
+  --muted-bg:       #11151c;
+  --shadow-color:   #010409;
+  --venn-a:         #58a6ff59;
+  --venn-b:         #3fb95059;
+}
+/* ===== 案H: blueprint(製図・図面風。鋼青×製図ブルー) ===== */
+body[data-theme="blueprint"] {
+  --bg:             #f2f5f7;
+  --text:           #24344d;
+  --text-secondary: #5d6b7e;
+  --accent:         #1e6bb8;
+  --accent-2:       #e8590c;
+  --accent-3:       #37b24c;
+  --card-bg:        #fbfcfd;
+  --card-border:    #c9d4de;
+  --code-bg:        #24344d;
+  --code-text:      #f2f5f7;
+  --table-head-bg:  #e3eaf0;
+  --line:           #c9d4de;
+  --muted-bg:       #e8eef3;
+  --shadow-color:   #c9d4de;
+  --venn-a:         #1e6bb866;
+  --venn-b:         #37b24c59;
+}
+/* ============================================================
+   テーマ別 構造オーバーライド(表紙・章扉の演出)
+   変数と表示切替のみ。マークアップは全テーマ共通。
+   ============================================================ */
+/* --- 案C: 表紙をポスター型(左下寄せ・大活字)に --- */
+body[data-theme="claude-dark"] .slide--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-end;
+  padding-bottom: 96px;
+}
+body[data-theme="claude-dark"] .slide--cover .slide-title { font-size: 76px; }
+body[data-theme="claude-dark"] .cover-kicker { color: var(--accent); }
+body[data-theme="claude-dark"] .cover-rule { display: none; }
+
+/* --- 案D: 表紙・章扉をインク紺に反転(雑誌の表紙型) --- */
+body[data-theme="ink-citrus"] .slide--cover,
+body[data-theme="ink-citrus"] .slide--section {
+  --bg: #20222c;
+  --text: #f4f4ef;
+  --text-secondary: #a9adbd;
+  --line: #3a3d4a;
+  --card-border: #f4f4ef;
+}
+body[data-theme="ink-citrus"] .slide--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: center;
+}
+body[data-theme="ink-citrus"] .slide--cover .slide-title { font-size: 76px; }
+body[data-theme="ink-citrus"] .cover-issue { display: block; }
+body[data-theme="ink-citrus"] .cover-kicker {
+  position: absolute; top: 48px; left: 64px;
+  letter-spacing: 4px; color: var(--accent);
+}
+body[data-theme="ink-citrus"] .cover-rule { display: none; }
+body[data-theme="ink-citrus"] .header-rule { border-bottom: 2px solid #20222c; }
+body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; }
+
+/* --- 案F: 表紙は装飾なしのポスター型。等幅タイポで端末らしさを出す --- */
+body[data-theme="cyber-terminal"] .slide--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-end;
+  padding: 96px;
+  --bg: #010409;
+}
+body[data-theme="cyber-terminal"] .slide--cover .slide-title { font-size: 76px; }
+body[data-theme="cyber-terminal"] .slide--cover .cover-meta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+body[data-theme="cyber-terminal"] .cover-kicker {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+body[data-theme="cyber-terminal"] .cover-rule { display: none; }
+body[data-theme="cyber-terminal"] .section-number { font-family: var(--font-mono); }
+
+
+
+/* --- 案H: 表紙を図面(製図)風に。図面枠+表題欄 --- */
+body[data-theme="blueprint"] .cover-frame { display: block; }
+body[data-theme="blueprint"] .cover-tblock { display: block; }
+body[data-theme="blueprint"] .slide--cover {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 128px 112px;
+}
+body[data-theme="blueprint"] .cover-kicker { color: var(--accent); letter-spacing: 4px; }
+body[data-theme="blueprint"] .cover-rule { display: none; }
+body[data-theme="blueprint"] .section-number { color: var(--accent); }
+
+/* ============================================================
+   ベース
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+/* html2pptx 注入CSS(p,li への Arial 直指定)対策。自ページのCSSが後勝ちになる */
+p, li, ul, ol { font-family: var(--font-body); }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+
+body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+
+.slide {
+  width: 1280px;
+  height: 720px;
+  background: var(--bg);
+  color: var(--text); /* テーマ別オーバーライドをスライド単位で再解決させる */
+  overflow: hidden;
+  position: relative;
+  padding: 48px var(--slide-pad) var(--slide-pad);
+  margin: 0 auto 24px auto;
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { background: none; }
+  .slide { margin: 0; page-break-after: always; }
+}
+
+.slide-heading {
+  font-family: var(--font-heading);
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-2);
+}
+/* 3部構成(表紙・章扉以外): タイトル → キーメッセージ → ボディ */
+.key-message {
+  font-family: var(--font-heading);
+  font-size: var(--fs-keymsg);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+/* キーメッセージとボディの区切り線(2026-07-13 ユーザー要望) */
+.header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+.slide-body-text { font-size: var(--fs-body); line-height: var(--lh-body); }
+.page-number {
+  position: absolute;
+  right: 48px;
+  bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-footnote);
+  color: var(--text-secondary);
+}
+
+/* ---------- 1. 表紙(cover) ----------
+   共通マークアップ+テーマ別の表示切替で表情を変える。
+   cover-rule(罫線)/ cover-dot(円)/ cover-issue(号数)は
+   使うテーマだけが display で有効化する。 */
+.slide--cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.cover-kicker {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.cover-rule { width: 460px; border-top: 1px solid var(--text); margin-bottom: var(--sp-1); }
+.cover-rule--pre-title { margin-bottom: var(--sp-4); }
+.cover-rule--pre-meta { margin-top: var(--sp-2); margin-bottom: var(--sp-3); }
+.cover-issue { display: none; position: absolute; top: 48px; right: 64px; font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--text-secondary); }
+.cover-frame { display: none; position: absolute; top: 40px; left: 40px; width: 1198px; height: 638px; border: 2px solid var(--text); }
+.cover-tblock { display: none; position: absolute; right: 42px; bottom: 42px; width: 430px; border: 2px solid var(--text); background: var(--card-bg); }
+.cover-tblock p { font-size: 14px; padding: 8px 16px; letter-spacing: 1px; }
+.cover-tblock p.cover-tb-row2 { border-top: 1px solid var(--text); color: var(--text-secondary); }
+.slide--cover .slide-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-cover-title);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  margin-bottom: var(--sp-3);
+}
+.slide--cover .slide-subtitle {
+  font-size: var(--fs-cover-sub);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-5);
+}
+.slide--cover .cover-meta { font-size: var(--fs-body); color: var(--text-secondary); }
+
+/* ---------- 2. セクション扉(section) ---------- */
+.slide--section { display: flex; flex-direction: column; justify-content: center; }
+.section-number {
+  font-family: var(--font-heading);
+  font-size: var(--fs-section-no);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: var(--sp-3);
+}
+.section-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+}
+.section-lead {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  margin-top: var(--sp-3);
+}
+
+/* ---------- 3. まとめ(summary) ---------- */
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.summary-item .summary-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 64px;
+  line-height: 1.2;
+}
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); }
+
+/* ---------- 4. 箇条書き本文(bullets) ---------- */
+.bullet-list { list-style-position: outside; padding-left: 32px; }
+.bullet-list li {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-2);
+}
+.bullet-list li b { font-weight: 700; }
+
+/* ---------- 5. カード型本文(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.card .card-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: var(--sp-1);
+}
+.card .card-no--2 { color: var(--accent-2); }
+.card .card-no--3 { color: var(--accent-3); }
+.card .card-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+}
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+.card--shadow { box-shadow: 4px 4px 0px var(--shadow-color); } /* 変換検証用: 単純ドロップシャドウ1段 */
+
+/* ---------- 6. コード表示(code) ---------- */
+.code-block {
+  background: var(--code-bg);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.code-block p {
+  color: var(--code-text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-sm);
+  line-height: 1.7;
+}
+.code-block .tok-comment { color: #b0aea5; }
+.code-block .tok-keyword { color: #6a9bcc; }
+.code-block .tok-string  { color: #d97757; }
+.code-caption { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-2); }
+
+/* ---------- 7. 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.compare-col .compare-label {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  margin-bottom: var(--sp-3);
+}
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after  { border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+
+/* ---------- 8. フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--accent);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+}
+.flow-step .flow-step-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: var(--sp-1);
+}
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); }
+.flow-arrow {
+  font-size: var(--fs-subheading);
+  color: var(--accent);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+
+/* ---------- 10. ロジックツリー(tree) ----------
+   固定キャンバス内の絶対配置。接続線は border 付き div(→PPTXでは線シェイプ) */
+.tree-canvas { position: relative; height: 420px; }
+.tree-node {
+  position: absolute;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-2) var(--sp-3);
+}
+.tree-node p { font-size: var(--fs-body-sm); font-weight: 700; }
+.tree-node p.tree-sub { font-size: var(--fs-caption); color: var(--text-secondary); font-weight: 400; margin-top: 4px; }
+.tree-node--root { border-color: var(--accent); }
+.tree-line { position: absolute; }
+.tree-line--h { border-top: 2px solid var(--text-secondary); }
+.tree-line--v { border-left: 2px solid var(--text-secondary); }
+
+/* ---------- 11. 集合図(venn→set) ----------
+   丸四角で集合を表す(円は空白を食うため使わない: 2026-07-13 ユーザー決定)。
+   交差型(重なり)と包含型(AがBを含む)の2変種。塗りは半透明(--venn-a/b) */
+.venn-canvas { position: relative; height: 400px; }
+.set-kind { position: absolute; font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.set-box { position: absolute; border-radius: 24px; }
+.set-box--fill-a { background: var(--venn-a); }
+.set-box--fill-b { background: var(--venn-b); }
+.set-box--outline { border: 2px solid var(--accent-2); }
+.set-box--solid { background: var(--card-bg); border: 2px solid var(--card-border); }
+.set-label { position: absolute; font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body-sm); }
+.set-label--x { font-size: var(--fs-caption); color: var(--accent); }
+.set-label--sub { font-size: var(--fs-caption); line-height: 1.5; }
+
+
+/* ---------- 12. フローチャート(flowchart) ----------
+   作図規約(2026-07-13 採用。出典: product.strap.app/magazine/post/knowhow_flow-chart):
+   - 流れは上から下・左から右。逆流・交差はさせない
+   - 端子(開始/終了)=角丸長方形、処理=長方形、判断=本来ひし形だが
+     回転がPPTX変換で失われるため(2026-07-13実測)、帯色ピルで代替する
+   - 判断からは矢印2本:「はい」は直進、「いいえ」は外側(下)へ
+   - 記号は重ねず間隔・サイズを揃える。テキストは簡潔に */
+.fc-canvas { position: relative; height: 340px; }
+.fc-box { position: absolute; background: var(--card-bg); border: 2px solid var(--card-border); text-align: center; display: flex; align-items: center; justify-content: center; }
+.fc-box p { font-size: 18px; font-weight: 700; line-height: 1.4; }
+.fc-box--terminal { border-radius: 999px; border-color: var(--accent); }
+.fc-box--process { border-radius: 6px; }
+.fc-box--decision { border-radius: 999px; border-color: var(--accent-2); background: var(--muted-bg); }
+.fc-arrow { position: absolute; font-size: var(--fs-body); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.fc-tag { position: absolute; font-size: 14px; font-weight: 700; color: var(--accent-2); font-family: var(--font-heading); }
+.fc-line { position: absolute; }
+.fc-line--h { border-top: 2px solid var(--text-secondary); }
+.fc-line--v { border-left: 2px solid var(--text-secondary); }
+
+
+/* ---------- 9. 表(table) ----------
+   注意: <table> 要素は html2pptx で変換されず丸ごと消える(2026-07-13 実測)。
+   表は必ずこの div ベース構造(dtable)で組むこと。 */
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--c1 { width: 240px; }
+.dtable-cell--c2 { width: 440px; }
+.dtable-cell--c3 { width: 440px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+/* ---------- 1. フィッシュボーン(fishbone)★確定 ----------
+   斜線不可(rotate禁止・border線は水平/垂直のみ)のため直交型:
+   水平の背骨 + 上下の要因カテゴリから垂直線で接続。頭(結果)は右端 */
+.fb-canvas { position: relative; height: 430px; }
+.fb-spine { position: absolute; border-top: 3px solid var(--text-secondary); }
+.fb-drop { position: absolute; border-left: 2px solid var(--text-secondary); }
+.fb-head {
+  position: absolute;
+  background: var(--card-bg);
+  border: 3px solid var(--accent);
+  border-radius: var(--radius-card);
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+}
+.fb-head p { font-size: var(--fs-body-sm); font-weight: 700; line-height: 1.4; }
+.fb-cat {
+  position: absolute;
+  width: 280px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: 14px 18px;
+}
+.fb-cat .fb-cat-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: 6px; }
+.fb-cat .fb-factor { font-size: var(--fs-footnote); line-height: 1.5; color: var(--text-secondary); }
+.fb-cat-title--1 { color: var(--accent); }
+.fb-cat-title--2 { color: var(--accent-2); }
+.fb-cat-title--3 { color: var(--accent-3); }
+.fb-arrow { position: absolute; font-size: var(--fs-subheading); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+
+/* ---------- 2. 2軸マトリクス(matrix)★確定 ----------
+   border十字線 + 角丸ピル(円不使用の方針)。象限タグは右上 */
+.mx-canvas { position: relative; height: 430px; }
+.mx-axis-v { position: absolute; border-left: 2px solid var(--text-secondary); }
+.mx-axis-h { position: absolute; border-top: 2px solid var(--text-secondary); }
+.mx-axis-label { position: absolute; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+.mx-quad-tag { position: absolute; font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--accent); }
+.mx-pill {
+  position: absolute;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 999px;
+  padding: 10px 22px;
+}
+.mx-pill p { font-size: 18px; font-weight: 700; }
+.mx-pill--hot { border-color: var(--accent); }
+.mx-pill--hot p { color: var(--accent); }
+
+/* ---------- 3. 入出力図(io) ---------- */
+.io-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.io-box {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3);
+  width: 290px;
+  text-align: center;
+}
+.io-box--model { width: 400px; border: 3px solid var(--accent); padding: var(--sp-4) var(--sp-3); }
+.io-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent-2); margin-bottom: var(--sp-1); }
+.io-box--model .io-label { color: var(--accent); }
+.io-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: var(--sp-1); }
+.io-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.io-arrow { font-size: var(--fs-keymsg); font-weight: 700; color: var(--accent); font-family: var(--font-heading); }
+.io-caption { margin-top: var(--sp-4); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+
+/* ---------- 4. レイヤー図(layers) ---------- */
+.ly-stack { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-1); }
+.ly-band { display: flex; align-items: stretch; border: 2px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); overflow: hidden; }
+.ly-chip { width: 230px; display: flex; align-items: center; justify-content: center; }
+.ly-chip p { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: #faf9f5; }
+.ly-chip--1 { background: var(--accent); }
+.ly-chip--2 { background: var(--accent-2); }
+.ly-chip--3 { background: var(--accent-3); }
+.ly-body { padding: 20px 28px; }
+.ly-title { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.ly-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+
+/* ---------- 5. ブロック構成図(blocks) ---------- */
+.bl-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.bl-node {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+}
+.bl-node--edge { width: 180px; }
+.bl-node-title { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; margin-bottom: 6px; }
+.bl-node-sub { font-size: var(--fs-footnote); line-height: 1.5; color: var(--text-secondary); }
+.bl-group {
+  flex: 1;
+  background: var(--muted-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: 16px 20px 20px;
+}
+.bl-group-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; }
+.bl-inner { display: flex; align-items: center; gap: var(--sp-2); }
+.bl-inner .bl-node { flex: 1; }
+.bl-step-no { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 4px; }
+.bl-step-no--1 { color: var(--accent-2); }
+.bl-step-no--2 { color: var(--accent-3); }
+.bl-arrow { font-size: 30px; font-weight: 700; color: var(--accent); font-family: var(--font-heading); }
+
+/* ---------- 6. プロンプト解剖図(anatomy) ---------- */
+.an-rows { display: flex; flex-direction: column; gap: 14px; margin-top: var(--sp-1); }
+.an-row { display: flex; align-items: stretch; gap: var(--sp-2); }
+.an-pill { width: 132px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+.an-pill p { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: #faf9f5; }
+.an-pill--role   { background: var(--accent); }
+.an-pill--ctx    { background: var(--accent-2); }
+.an-pill--inst   { background: var(--accent-3); }
+.an-pill--format { background: #63615a; }
+.an-text { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); display: flex; align-items: center; padding: 12px 22px; }
+.an-text p { font-family: var(--font-mono); font-size: var(--fs-body-sm); }
+.an-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); }
+
+/* ---------- 7. 対話再現(chat) ---------- */
+.ch-thread { display: flex; flex-direction: column; gap: 10px; width: 1020px; margin: 0 auto; }
+.ch-bubble { max-width: 660px; border-radius: var(--radius-card); padding: 10px 18px; }
+.ch-bubble--user { align-self: flex-end; background: var(--muted-bg); border: 2px solid var(--card-border); }
+.ch-bubble--ai { align-self: flex-start; background: var(--card-bg); border: 2px solid var(--card-border); }
+.ch-speaker { font-family: var(--font-heading); font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.ch-bubble--user .ch-speaker { color: var(--accent); }
+.ch-bubble--ai .ch-speaker { color: var(--accent-2); }
+.ch-text { font-size: var(--fs-caption); line-height: 1.5; }
+.ch-note { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ---------- 8. 注釈付き画面(annotate) ---------- */
+.at-row { display: flex; gap: var(--sp-4); margin-top: var(--sp-1); }
+.at-shot { position: relative; width: 620px; }
+.at-shot img { width: 620px; height: 400px; border: 2px solid var(--card-border); border-radius: 8px; display: block; }
+.at-badge {
+  position: absolute; width: 34px; height: 34px; border-radius: 8px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.at-badge p { font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: #faf9f5; }
+.at-list { flex: 1; }
+.at-item { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
+.at-item-no { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--accent); min-width: 34px; }
+.at-item-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: 4px; }
+.at-item-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+
+/* ---------- 9. サイクル図(cycle) ----------
+   回転不可のため 2×2 配置 + 四辺の矢印グリフで環を構成 */
+.cy-canvas { position: relative; height: 430px; }
+.cy-card {
+  position: absolute; width: 380px; height: 140px;
+  background: var(--card-bg); border: 2px solid var(--card-border);
+  border-radius: var(--radius-card); padding: 18px 24px;
+}
+.cy-step { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 4px; }
+.cy-step--1 { color: var(--accent); }
+.cy-step--2 { color: var(--accent-2); }
+.cy-step--3 { color: var(--accent-3); }
+.cy-step--4 { color: var(--accent); }
+.cy-title { font-family: var(--font-heading); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.cy-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.cy-arrow { position: absolute; font-size: var(--fs-keymsg); font-weight: 700; color: var(--accent); font-family: var(--font-heading); }
+.cy-center { position: absolute; font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--text-secondary); text-align: center; }
+
+/* ---------- 10. 役割分担レーン(lanes) ---------- */
+.ln-canvas { margin-top: 4px; }
+.ln-header { position: relative; height: 30px; }
+.ln-header p { position: absolute; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--text-secondary); }
+.ln-lane { display: flex; align-items: stretch; gap: 12px; margin-bottom: 10px; }
+.ln-chip { width: 180px; border-radius: var(--radius-card); display: flex; align-items: center; justify-content: center; }
+.ln-chip p { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: #faf9f5; }
+.ln-chip--human { background: var(--accent); }
+.ln-chip--both  { background: var(--accent-2); }
+.ln-chip--ai    { background: var(--accent-3); }
+.ln-zone { position: relative; flex: 1; height: 118px; background: var(--muted-bg); border-radius: var(--radius-card); }
+.ln-card {
+  position: absolute; top: 12px; width: 176px; height: 94px;
+  background: var(--card-bg); border: 2px solid var(--card-border);
+  border-radius: 8px; padding: 10px 14px;
+}
+.ln-card-no { font-family: var(--font-heading); font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 2px; }
+.ln-card-title { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; line-height: 1.35; }
+
+/* ---------- 11. 適性ヒート表(heat) ----------
+   dtable 拡張。セルの淡色塗り + 記号で濃淡を見せる */
+.ht-row { display: flex; border-bottom: 1px solid var(--line); }
+.ht-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.ht-cell { padding: 14px 18px; display: flex; align-items: center; justify-content: center; }
+.ht-cell p { font-size: var(--fs-body-sm); line-height: 1.4; }
+.ht-row--head .ht-cell p { font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-caption); }
+.ht-cell--task { width: 280px; justify-content: flex-start; }
+.ht-cell--task p { font-weight: 700; font-size: var(--fs-caption); }
+.ht-cell--v { width: 218px; }
+.ht-cell--v p { font-family: var(--font-heading); font-weight: 700; font-size: 22px; }
+.ht-good { background: var(--heat-good); }
+.ht-good p { color: var(--accent-3); }
+.ht-ok { background: var(--heat-ok); }
+.ht-ok p { color: var(--accent-2); }
+.ht-part { background: var(--heat-part); }
+.ht-part p { color: var(--accent); }
+.ht-no { background: var(--heat-no); }
+.ht-no p { color: var(--text-secondary); }
+.ht-legend { margin-top: var(--sp-2); font-size: var(--fs-caption); color: var(--text-secondary); }
+
+/* ---------- 12. 変換図(delta) ----------
+   注: 大数字はキーメッセージ(34px)超のため、フォント階層の例外裁定が必要 */
+.dl-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+.dl-card { width: 400px; border-radius: var(--radius-card); padding: 26px 32px; text-align: center; }
+.dl-card--before { background: var(--muted-bg); border: 2px solid var(--muted-bg); }
+.dl-card--after { background: var(--card-bg); border: 3px solid var(--accent); }
+.dl-label { font-family: var(--font-heading); font-size: 18px; font-weight: 700; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 6px; }
+.dl-card--after .dl-label { color: var(--accent); }
+.dl-number { font-family: var(--font-heading); font-size: 68px; font-weight: 700; line-height: 1.15; margin-bottom: 6px; }
+.dl-card--after .dl-number { color: var(--accent); }
+.dl-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.dl-mid { width: 190px; text-align: center; }
+.dl-mid-arrow { font-family: var(--font-heading); font-size: var(--fs-keymsg); font-weight: 700; color: var(--accent); }
+.dl-mid-caption { font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-top: 4px; }
+.dl-band { margin-top: var(--sp-3); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 14px 24px; }
+.dl-band p { font-size: var(--fs-body-sm); font-weight: 700; text-align: center; }
+
+/* ---------- 13. ビッグナンバー(stats) ----------
+   注: 大数字はキーメッセージ(34px)超のため、フォント階層の例外裁定が必要 */
+.st-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-2); }
+.st-tile { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 30px 24px; text-align: center; }
+.st-number { font-family: var(--font-heading); font-size: 80px; font-weight: 700; line-height: 1.1; margin-bottom: 8px; }
+.st-number--1 { color: var(--accent); }
+.st-number--2 { color: var(--accent-2); }
+.st-number--3 { color: var(--accent-3); }
+.st-label { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.st-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.st-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+
+/* ---------- 14. タイムライン(timeline) ---------- */
+.tl-canvas { position: relative; height: 430px; }
+.tl-line { position: absolute; border-top: 3px solid var(--text-secondary); }
+.tl-marker { position: absolute; width: 16px; height: 16px; border-radius: 5px; background: var(--accent); }
+.tl-tick { position: absolute; border-left: 2px solid var(--card-border); }
+.tl-block { position: absolute; width: 220px; text-align: center; }
+.tl-block--now { background: var(--card-bg); border: 2px solid var(--accent); border-radius: var(--radius-card); padding: 10px 6px; }
+.tl-year { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.tl-title { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; margin-bottom: 2px; }
+.tl-sub { font-size: var(--fs-footnote); line-height: 1.45; color: var(--text-secondary); }
+
+/* ---------- 15. ハブ&スポーク(hub) ----------
+   斜線不可のため上下左右4方向 + 水平/垂直の接続線に限定 */
+.hb-canvas { position: relative; height: 430px; }
+.hb-center {
+  position: absolute;
+  background: var(--card-bg); border: 3px solid var(--accent);
+  border-radius: var(--radius-card); text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.hb-center .hb-center-title { font-family: var(--font-heading); font-size: var(--fs-body); font-weight: 700; }
+.hb-center .hb-center-sub { font-size: var(--fs-footnote); color: var(--text-secondary); margin-top: 4px; }
+.hb-sat {
+  position: absolute; width: 300px;
+  background: var(--card-bg); border: 2px solid var(--card-border);
+  border-radius: var(--radius-card); padding: 14px 20px; text-align: center;
+}
+.hb-sat-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: 2px; }
+.hb-sat-title--1 { color: var(--accent); }
+.hb-sat-title--2 { color: var(--accent-2); }
+.hb-sat-title--3 { color: var(--accent-3); }
+.hb-sat-sub { font-size: var(--fs-footnote); color: var(--text-secondary); }
+.hb-link { position: absolute; }
+.hb-link--v { border-left: 2px solid var(--text-secondary); }
+.hb-link--h { border-top: 2px solid var(--text-secondary); }
+
+/* ---------- 16. ステップ図(steps) ----------
+   台形不可のため、踏み台(矩形)+カードの階段。左下→右上 */
+.stp-canvas { position: relative; height: 430px; }
+.stp-base { position: absolute; border-top: 2px solid var(--text-secondary); }
+.stp-ped { position: absolute; background: var(--muted-bg); border-radius: 6px 6px 0 0; }
+.stp-card {
+  position: absolute; width: 300px; height: 122px;
+  background: var(--card-bg); border: 2px solid var(--card-border);
+  border-radius: var(--radius-card); padding: 14px 22px;
+}
+.stp-lv { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 2px; }
+.stp-lv--1 { color: var(--accent); }
+.stp-lv--2 { color: var(--accent-2); }
+.stp-lv--3 { color: var(--accent-3); }
+.stp-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: 4px; }
+.stp-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.stp-arrow { position: absolute; font-size: var(--fs-subheading); font-weight: 700; color: var(--accent); font-family: var(--font-heading); }
+
+/* ============================================================
+   回固有の追加(20260714_ai-flow-design v5・claude-gray)
+   - 4層それぞれに色を割り当て、地図・現在地バー・説明表で統一(ゲート3 指摘E)
+   - 現在地バーは各層の全ページに置く(指摘D=設計仕様の履行)
+   ============================================================ */
+.page {
+  width: 1280px; height: 720px; background: var(--bg); color: var(--text);
+  overflow: hidden; position: relative;
+  padding: 48px var(--slide-pad) var(--slide-pad); margin: 0 auto 24px auto;
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { background: none; }
+  .page { margin: 0; page-break-after: always; }
+}
+
+/* 本文1行26字保証(24px×26=624px) */
+.page .slide-body-text { max-width: 624px; }
+.page .bullet-list li { max-width: 624px; }
+.page .summary-text { max-width: 624px; }
+
+/* line-height 明示(lint 誤検出回避・2026-07-15 実測) */
+.flow-step-sub, .dl-mid-caption { line-height: 1.5; }
+
+/* ---------- 4層の色(claude-gray。ループのゴールドが第4の色) ---------- */
+:root {
+  --l1: #d97757; --l2: #6a9bcc; --l3: #788c5d; --l4: #b8873a;
+  --l1-fill: #f0dbd2; --l2-fill: #dbe5f0; --l3-fill: #dee4d4; --l4-fill: #ece0c6;
+}
+.lc-1 { color: var(--l1); } .lc-2 { color: var(--l2); }
+.lc-3 { color: var(--l3); } .lc-4 { color: var(--l4); }
+
+/* ---------- 4層の地図(set 包含型 + ループの矢印グリフ) ---------- */
+.map-canvas { position: relative; height: 390px; }
+.map-box { position: absolute; border-radius: 24px; }
+.map-box--l3 { left: 250px; top: 56px;  width: 660px; height: 230px; background: var(--l3-fill); border: 2px solid var(--l3); }
+.map-box--l2 { left: 300px; top: 100px; width: 560px; height: 142px; background: var(--card-bg); border: 2px solid var(--l2); }
+.map-box--l1 { left: 372px; top: 142px; width: 416px; height: 58px;  background: var(--l1-fill); border: 2px solid var(--l1); }
+.map-name { position: absolute; font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body-sm); }
+.map-name--l3 { left: 274px; top: 68px;  }
+.map-name--l2 { left: 324px; top: 112px; }
+.map-name--l1 { left: 396px; top: 154px; }
+.map-sub { position: absolute; font-size: var(--fs-caption); color: var(--text-secondary); }
+.map-arrow { position: absolute; font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-keymsg); color: var(--l4); }
+.map-loop { position: absolute; font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body-sm); color: var(--l4); }
+.map-note { position: absolute; left: 0px; top: 350px; font-size: var(--fs-caption); color: var(--text-secondary); }
+
+/* ---------- 現在地バー(各層の全ページ・層色で点灯) ---------- */
+.mapbar { display: flex; gap: var(--sp-1); margin-bottom: var(--sp-3); }
+.mapbar-chip { flex: 1; background: var(--muted-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 6px 8px; }
+.mapbar-chip p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; text-align: center; color: var(--text-secondary); }
+.mapbar-chip--on { border-width: 3px; }
+.mapbar-chip--on-1 { background: var(--l1-fill); border-color: var(--l1); }
+.mapbar-chip--on-1 p { color: var(--l1); }
+.mapbar-chip--on-2 { background: var(--l2-fill); border-color: var(--l2); }
+.mapbar-chip--on-2 p { color: var(--l2); }
+.mapbar-chip--on-3 { background: var(--l3-fill); border-color: var(--l3); }
+.mapbar-chip--on-3 p { color: var(--l3); }
+.mapbar-chip--on-4 { background: var(--l4-fill); border-color: var(--l4); }
+.mapbar-chip--on-4 p { color: var(--l4); }
+
+/* ---------- 入出力例(プロンプト具体例) ---------- */
+.io-pair { display: flex; gap: var(--sp-3); }
+.io-col { flex: 1; }
+.io-block { border-radius: var(--radius-card); padding: 12px 16px; margin-bottom: var(--sp-2); }
+.io-block--prompt { background: var(--muted-bg); border: 2px solid var(--card-border); }
+.io-block--out-bad { background: var(--card-bg); border: 2px dashed var(--card-border); }
+.io-block--out-good { background: var(--l1-fill); border: 2px solid var(--l1); }
+.io-role { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+.io-block p.io-text { font-size: var(--fs-body-sm); line-height: 1.5; }
+
+/* ---------- 出典一覧(付録) ---------- */
+.src-list { column-count: 2; column-gap: var(--sp-5); }
+.src-list p { font-size: var(--fs-caption); line-height: 1.7; color: var(--text-secondary); margin-bottom: 6px; }
+.src-list p b { color: var(--text); font-weight: 700; }
+</style>
+</head>
+<body data-theme="claude-gray">
+
+<div class="page slide--cover">
+  <p class="cover-kicker">AI活用セミナー</p>
+  <div class="cover-rule cover-rule--pre-title"></div>
+  <h1 class="slide-title">その「うまくいかない」は、<br>どの層の問題か</h1>
+  <p class="slide-subtitle">AIへの指示を「業務フロー設計」として捉え直す</p>
+  <div class="cover-rule cover-rule--pre-meta"></div>
+  <p class="cover-meta">プロンプト / コンテキスト / ハーネス / ループ<br>60分</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">「使っている」のに、成果が出ていない</h2>
+  <p class="key-message">使っている人の4人に3人は、時間が減っていない</p>
+  <div class="header-rule"></div>
+  <div class="st-row">
+    <div class="st-tile">
+      <p class="st-number st-number--1">25%</p>
+      <p class="st-label">業務時間が減った人</p>
+      <p class="st-sub">生成AIを業務利用している人のうち、<br>実際に時間が減ったのは4人に1人</p>
+    </div>
+    <div class="st-tile">
+      <p class="st-number st-number--2">1位</p>
+      <p class="st-label">企業の懸念で最も多いもの</p>
+      <p class="st-sub">「効果的な活用方法がわからない」<br>セキュリティやコストより上位</p>
+    </div>
+  </div>
+  <p class="st-caption">出典: パーソル総合研究所(n=3,000) / 総務省 令和7年版 情報通信白書</p>
+  <p class="page-number">1</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">30秒ワーク</h2>
+  <p class="key-message">あなたの依頼文だけを見て、隣の人は動けますか</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">01</p>
+      <p class="flow-step-text">30秒で書く</p>
+      <p class="flow-step-sub">直近の自分の仕事を1つ、<br>AIへの依頼文として<br>紙に書く</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">02</p>
+      <p class="flow-step-text">隣の人と交換する</p>
+      <p class="flow-step-sub">書いた紙を、<br>そのまま隣の席の人と<br>交換する</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">03</p>
+      <p class="flow-step-text">実行できるか判定</p>
+      <p class="flow-step-sub">相手の依頼文だけを見て、<br>自分がその仕事を<br>実行できるか考える</p>
+    </div>
+  </div>
+  <p class="st-caption">質問は禁止。書かれている文だけが手がかりです</p>
+  <p class="page-number">2</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">足りないのは「言い方」ではない</h2>
+  <p class="key-message">足りないのは言い回しではなく、渡していない前提</p>
+  <div class="header-rule"></div>
+  <ul class="bullet-list">
+    <li>社内でしか通じない言葉が入っていて、意味がわからない</li>
+    <li>何と比べればいいのかが、書かれていない</li>
+    <li>誰に出す資料なのかが、わからない</li>
+    <li>出来上がりがどういう形なのか、想像できない</li>
+    <li><b>どれも「日本語が下手」という話ではない。<br>書いていない情報の話</b></li>
+  </ul>
+  <p class="st-caption">公式: 「前提知識のない同僚が混乱するなら、AIも混乱する」</p>
+  <p class="page-number">3</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">今日のゴールと流れ</h2>
+  <p class="key-message">今日の到達点は、原因の層を切り分けられること</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">4つの違いと関係を、自分の言葉で説明できる</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no">02</p>
+    <p class="summary-text">うまくいかないとき、原因がどの層かを切り分けられる</p>
+  </div>
+  <p class="st-caption">流れ: 問題提起 → 4層の設計図(概念+具体) → 気づきワーク → 持ち帰り</p>
+  <p class="page-number">4</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">4つは入れ子になっている</h2>
+  <p class="key-message">4つは別物ではなく、入れ子と、それを回す輪</p>
+  <div class="header-rule"></div>
+  <div class="map-canvas">
+    <div class="map-box map-box--l3"></div>
+    <div class="map-box map-box--l2"></div>
+    <div class="map-box map-box--l1"></div>
+    <p class="map-name map-name--l3 lc-3">ハーネス</p>
+    <p class="map-name map-name--l2 lc-2">コンテキスト</p>
+    <p class="map-name map-name--l1 lc-1">プロンプト</p>
+    <p class="map-sub" style="left: 274px; top: 254px; width: 300px;">道具・権限・確認手段</p>
+    <p class="map-sub" style="left: 324px; top: 212px; width: 300px;">渡す資料・前提</p>
+    <p class="map-arrow" style="left: 566px; top: 6px;">▶</p>
+    <p class="map-arrow" style="left: 924px; top: 146px;">▼</p>
+    <p class="map-arrow" style="left: 566px; top: 292px;">◀</p>
+    <p class="map-arrow" style="left: 200px; top: 146px;">▲</p>
+    <p class="map-loop" style="left: 618px; top: 12px;">ループ（PDCAを回す）</p>
+    <p class="map-note">外側の層は内側を含む。ループだけは輪の外を回る（出典: Anthropic / LangChain の公式記述をもとに本資料が合成）</p>
+  </div>
+  <p class="page-number">5</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">これは、仕事の渡し方と同じ形</h2>
+  <p class="key-message">AIへの依頼は、仕事の渡し方とまったく同じ形</p>
+  <div class="header-rule"></div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--c1"><p>層</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>現場の人に仕事を任せるとき</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>AIに仕事を任せるとき</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-1">プロンプト</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>何をしてほしいかを伝える</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>依頼文を書く</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-2">コンテキスト</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>過去の記録・社内用語・完成形を渡す</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>前提と資料を渡す</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-3">ハーネス</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>設備と権限、合格ラインを決める</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>道具・権限・確認手段</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-4">ループ</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>途中で見て、直させて、また見る</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>やり直し方と完了条件</p></div>
+  </div>
+  <p class="st-caption">公式: 「AIを、優秀だが自社の慣習を知らない新入社員だと思え」</p>
+  <p class="page-number">6</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">第1層：プロンプト（依頼文）</h2>
+  <p class="key-message">プロンプトは「何を頼むか」を書く一番内側の層</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-1"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <ul class="bullet-list">
+    <li>定義：<b>一貫して</b>要求を満たす出力を得る指示の書き方</li>
+    <li>目的は「一度当てる」ことではなく、<br>何度でも同じ品質が出ること</li>
+    <li>部品：役割 / 背景・目的 / 制約 / 出力形式 / 例示</li>
+    <li>判定基準：<b>隣の人が、この文だけで実行できるか</b></li>
+  </ul>
+  <p class="st-caption">出典: OpenAI 公式（定義）/ Google 公式（部品）/ Anthropic 公式（判定基準）</p>
+  <p class="page-number">7</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">具体例：「不良報告をまとめて」</h2>
+  <p class="key-message">部品を足すだけで、出力は使えるものに変わる</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-1"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <div class="io-pair">
+    <div class="io-col">
+      <div class="io-block io-block--prompt">
+        <p class="io-role">✗ 悪い依頼</p>
+        <p class="io-text">この不良、まとめといて<br>（＋メモを貼り付け）</p>
+      </div>
+      <div class="io-block io-block--out-bad">
+        <p class="io-role">AIの出力</p>
+        <p class="io-text">抽象的でバラバラ。<br>原因も次の手も無い</p>
+      </div>
+    </div>
+    <div class="io-col">
+      <div class="io-block io-block--prompt">
+        <p class="io-role">◎ 良い依頼</p>
+        <p class="io-text">品質管理担当として、次のメモを<br>「不良内容/推定原因/次の手」の<br>3項目で1行ずつ</p>
+      </div>
+      <div class="io-block io-block--out-good">
+        <p class="io-role">AIの出力</p>
+        <p class="io-text">3項目に整理され、<br>そのまま報告に使える</p>
+      </div>
+    </div>
+  </div>
+  <p class="st-caption">足したのは役割・出力形式だけ。特別な呪文ではない</p>
+  <p class="page-number">8</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">第2層：コンテキスト（渡す資料）</h2>
+  <p class="key-message">何を言うかより、何を渡したかで結果は決まる</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-2"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <ul class="bullet-list">
+    <li>定義：価値の高い情報の、<b>できるだけ小さな組み合わせ</b></li>
+    <li>30秒ワークで足りなかったものは、全部この層</li>
+    <li>落とし穴：<b>渡しすぎると精度は落ちる</b><br>（18モデル全部で確認）</li>
+    <li>だから足す設計であり、引く設計でもある</li>
+  </ul>
+  <p class="st-caption">出典: Anthropic 公式（定義）/ Chroma 研究（渡しすぎの劣化）</p>
+  <p class="page-number">9</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">「渡す」を仕組みにする3つの道具</h2>
+  <p class="key-message">毎回渡すのではなく、渡す仕組みを持たせる</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-2"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no card-no--2">01</p>
+      <p class="card-title">ルールファイル</p>
+      <p class="card-text">「うちの決まりごと」を<br>先に書いておくメモ。<br>毎回の前置きが不要に<br>（※強制ではない）</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">02</p>
+      <p class="card-title">スキル</p>
+      <p class="card-text">よくやる作業の<br>手順書＋道具一式。<br>その作業の時だけ<br>AIが取り出す</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--2">03</p>
+      <p class="card-title">RAG（検索して渡す）</p>
+      <p class="card-text">社内文書DBを検索し<br>その中身を根拠に答える。<br>思い込み回答を減らす<br>（※ゼロにはならない）</p>
+    </div>
+  </div>
+  <p class="st-caption">名前は覚えなくてよい。「渡すことは仕組みにできる」だけ持ち帰る</p>
+  <p class="page-number">10</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">第3層：ハーネス（道具と確認）</h2>
+  <p class="key-message">AIに何を持たせ、何を許し、何で確かめるか</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-3"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no card-no--3">01</p>
+      <p class="card-title">ツール（道具）</p>
+      <p class="card-text">検索・計算・システム<br>操作をAIに持たせる。<br>AI自身が判断して使う</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">02</p>
+      <p class="card-title">MCP（つなぎ方）</p>
+      <p class="card-text">社内システムにつなぐ<br>共通規格＝共通コンセント。<br>専用配線が要らない</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">03</p>
+      <p class="card-title">権限</p>
+      <p class="card-text">読むのは自由、<br>書き換えは承認。<br>合格の基準も決める</p>
+    </div>
+  </div>
+  <p class="st-caption">出典: Anthropic 公式（ツール / MCP / 権限）</p>
+  <p class="page-number">11</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">道具立てを変えるだけで1.5倍</h2>
+  <p class="key-message">道具立てを変えるだけで、正答率は33%から49%</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-3"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <div class="dl-row">
+    <div class="dl-card dl-card--before">
+      <p class="dl-label">BEFORE</p>
+      <p class="dl-number">33%</p>
+      <p class="dl-sub">従来の道具立て</p>
+    </div>
+    <div class="dl-mid">
+      <p class="dl-mid-arrow">▶</p>
+      <p class="dl-mid-caption">AI本体は同じ<br>道具と確認手段を<br>変えただけ</p>
+    </div>
+    <div class="dl-card dl-card--after">
+      <p class="dl-label">AFTER</p>
+      <p class="dl-number">49%</p>
+      <p class="dl-sub">作り直した道具立て</p>
+    </div>
+  </div>
+  <p class="st-caption">道具は増やさず2つに絞り、その説明文に労力をかけた（Anthropic 公式）</p>
+  <p class="page-number">12</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">確認は、機械に落とさせる</h2>
+  <p class="key-message">一番強い確認手段は、機械的に「落ちる」仕組み</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-3"><p>ハーネス</p></div>
+    <div class="mapbar-chip"><p>ループ</p></div>
+  </div>
+  <div class="card-row">
+    <div class="card">
+      <p class="card-no card-no--3">01</p>
+      <p class="card-title">ルール（最強）</p>
+      <p class="card-text">条件を満たさなければ<br>自動で不合格。<br>人の気分が入らない</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">02</p>
+      <p class="card-title">目で見る</p>
+      <p class="card-text">実物を見て<br>崩れていないかを<br>確かめる</p>
+    </div>
+    <div class="card">
+      <p class="card-no card-no--3">03</p>
+      <p class="card-title">AIに採点（弱い）</p>
+      <p class="card-text">公式が「頑健でない」<br>と明言。AIは自分に<br>甘く採点する</p>
+    </div>
+  </div>
+  <p class="st-caption">頼む前に「これが無ければ差し戻す」不合格条件を機械的に決める</p>
+  <p class="page-number">13</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">第4層：ループ（PDCAを回す）</h2>
+  <p class="key-message">ループとは、PDCAを回し続けること</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-4"><p>ループ</p></div>
+  </div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--c1"><p>PDCA（現場）</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>AIの回し方（公式）</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>AIならでは</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p>計画 → 実行</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>集める → 動く</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p class="lc-4">自動で回せる</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p>評価 → 改善</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>確かめる → 繰り返す</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>人が輪の外へ</p></div>
+  </div>
+  <p class="st-caption">計画・指示まで仕組みにすると自動化。ただし内側3層が整っていることが前提</p>
+  <p class="page-number">14</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">終わりの条件は、判定できる形で</h2>
+  <p class="key-message">「良くして」ではなく「何がどうなったら完了か」</p>
+  <div class="header-rule"></div>
+  <div class="mapbar">
+    <div class="mapbar-chip"><p>プロンプト</p></div>
+    <div class="mapbar-chip"><p>コンテキスト</p></div>
+    <div class="mapbar-chip"><p>ハーネス</p></div>
+    <div class="mapbar-chip mapbar-chip--on mapbar-chip--on-4"><p>ループ</p></div>
+  </div>
+  <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">終われない書き方</p>
+      <ul class="bullet-list">
+        <li>「不良の原因をちゃんと書いて」</li>
+        <li>「ちゃんと」がどこまでか不明</li>
+        <li>AIも本人も判定できない</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">終われる書き方</p>
+      <ul class="bullet-list">
+        <li>推定原因を3つ・各1行</li>
+        <li>対策の担当と期限つき</li>
+        <li>数えれば他人が判定できる</li>
+      </ul>
+    </div>
+  </div>
+  <p class="st-caption">良い完了条件の3要件: 測れる終了状態 / どう証明するか / 制約（Anthropic 公式）</p>
+  <p class="page-number">15</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">気づきワーク：どの層の問題か</h2>
+  <p class="key-message">直近の失敗を1つ、どの層の問題か当ててください</p>
+  <div class="header-rule"></div>
+  <div class="flow-row">
+    <div class="flow-step">
+      <p class="flow-step-no">01</p>
+      <p class="flow-step-text">失敗を1つ書く</p>
+      <p class="flow-step-sub">最近AIに頼んで<br>期待外れだった仕事を<br>2行で書き出す</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">02</p>
+      <p class="flow-step-text">渡した / 渡さなかった</p>
+      <p class="flow-step-sub">そのとき何を渡したか、<br>何を渡さなかったかを<br>書き出す</p>
+    </div>
+    <p class="flow-arrow">▶</p>
+    <div class="flow-step">
+      <p class="flow-step-no">03</p>
+      <p class="flow-step-text">層を1つ選ぶ</p>
+      <p class="flow-step-sub">次ページの4つの問いを<br>上から投げ、<br>層を1つに絞る</p>
+    </div>
+  </div>
+  <p class="st-caption">個人ワーク6分 → 全体共有4分。正解を当てるゲームではありません</p>
+  <p class="page-number">16</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">「それらしいのに使えない」出力</h2>
+  <p class="key-message">「それらしいのに使えない」出力は、たいてい第2層</p>
+  <div class="header-rule"></div>
+  <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">書いた依頼文</p>
+      <ul class="bullet-list">
+        <li>「今週の不具合を分析して、<br>対策会議用にまとめて」</li>
+        <li>目的も形式も書いてある</li>
+        <li>依頼文としては悪くない</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">渡していないもの</p>
+      <ul class="bullet-list">
+        <li>工程名・部品番号の対応</li>
+        <li>過去の類似不良の対策履歴</li>
+        <li>会議で毎回問われる歩留まり</li>
+      </ul>
+    </div>
+  </div>
+  <p class="st-caption">言い方の問題に見えて、実は「渡していないもの」の問題だった</p>
+  <p class="page-number">17</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">切り分けの4つの問い</h2>
+  <p class="key-message">内側の層から順に、4つの問いを自分に投げる</p>
+  <div class="header-rule"></div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--c1"><p>問い</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>自分に投げる質問</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>当てはまれば</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-1">問い 1</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>役割・目的・制約・形式を書いたか</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p class="lc-1">プロンプト</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-2">問い 2</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>渡していない資料・前提はないか</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p class="lc-2">コンテキスト</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-3">問い 3</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>検索・計算・社内データが要る仕事か</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p class="lc-3">ハーネス</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-4">問い 4</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>完了条件を決めてから頼んだか</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p class="lc-4">ループ</p></div>
+  </div>
+  <p class="page-number">18</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">あなたの失敗は、どの層でしたか</h2>
+  <p class="key-message">多くの「プロンプトの問題」は、実は別の層</p>
+  <div class="header-rule"></div>
+  <ul class="bullet-list">
+    <li>自分が知っていることは、無意識に「相手も知っている」<br>と思い込む。だから抜ける</li>
+    <li>抜けたまま出た答えを見て、また言い方を直す。<br>ここで無限ループに入る</li>
+    <li><b>直すべきなのは言い方ではなく、渡していないものだった</b></li>
+    <li>層は1つに絞る。打ち手を1つに決めるため<br>（故障の切り分けと同じ）</li>
+  </ul>
+  <p class="page-number">19</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">4層診断チェックリスト</h2>
+  <p class="key-message">迷ったら、内側の層から順に4つを疑う</p>
+  <div class="header-rule"></div>
+  <div class="dtable-row dtable-row--head">
+    <div class="dtable-cell dtable-cell--c1"><p>疑う層</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>こういう症状が出たら</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>最初の打ち手</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-1">1 プロンプト</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>言われたことを取り違える</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>役割・目的・制約・形式を書き直す</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-2">2 コンテキスト</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>知らないはずのことを知らない</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>渡していない資料と前提を渡す</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-3">3 ハーネス</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>検索や計算が要る / 追えない</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>道具・権限・確認手段を見直す</p></div>
+  </div>
+  <div class="dtable-row">
+    <div class="dtable-cell dtable-cell--c1"><p class="lc-4">4 ループ</p></div>
+    <div class="dtable-cell dtable-cell--c2"><p>終わらない / 同じことを繰り返す</p></div>
+    <div class="dtable-cell dtable-cell--c3"><p>完了条件を判定できる形で決める</p></div>
+  </div>
+  <p class="st-caption">内側ほど安く速く直せる。層を取り違えると、かえって悪化する（OpenAI 公式）</p>
+  <p class="page-number">20</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">全部「業務フロー設計」だった</h2>
+  <p class="key-message">AIへの指示とは、仕事の渡し方を設計すること</p>
+  <div class="header-rule"></div>
+  <div class="map-canvas">
+    <div class="map-box map-box--l3"></div>
+    <div class="map-box map-box--l2"></div>
+    <div class="map-box map-box--l1"></div>
+    <p class="map-name map-name--l3 lc-3">ハーネス ＝ 道具と権限</p>
+    <p class="map-name map-name--l2 lc-2">コンテキスト ＝ 渡す資料</p>
+    <p class="map-name map-name--l1 lc-1">プロンプト ＝ 依頼文</p>
+    <p class="map-sub" style="left: 274px; top: 254px; width: 460px;">何を使わせて、何で確かめるか</p>
+    <p class="map-sub" style="left: 324px; top: 212px; width: 460px;">何を渡すか</p>
+    <p class="map-arrow" style="left: 566px; top: 6px;">▶</p>
+    <p class="map-arrow" style="left: 924px; top: 146px;">▼</p>
+    <p class="map-arrow" style="left: 566px; top: 292px;">◀</p>
+    <p class="map-arrow" style="left: 200px; top: 146px;">▲</p>
+    <p class="map-loop" style="left: 618px; top: 12px;">ループ ＝ PDCAを回す・完了条件</p>
+    <p class="map-note">4つとも、新しく現場に入った人に仕事を任せるときにやっていること。業務が分かる人ほど、うまく任せられる</p>
+  </div>
+  <p class="page-number">21</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">明日、最初の1回でやること</h2>
+  <p class="key-message">頼む前に「渡すもの」と「完了条件」を1行書く</p>
+  <div class="header-rule"></div>
+  <div class="summary-item">
+    <p class="summary-no">01</p>
+    <p class="summary-text">渡す資料・前提を1行<br>（工程の呼び方・過去の経緯・比較対象）</p>
+  </div>
+  <div class="summary-item">
+    <p class="summary-no">02</p>
+    <p class="summary-text">完了条件を1行<br>（何がどうなったら合格か。数えられる形で）</p>
+  </div>
+  <p class="st-caption">この2行で、最も失敗の多い第2層と第4層を先回りで潰せる。残り2層は、つまずいたら疑う</p>
+  <p class="page-number">22</p>
+</div>
+
+<div class="page">
+  <h2 class="slide-heading">出典一覧</h2>
+  <p class="key-message">本資料の主張の根拠は、この一覧から辿れます</p>
+  <div class="header-rule"></div>
+  <div class="src-list">
+    <p><b>Anthropic 公式</b><br>コンテキストの定義 / ハーネス / 確認手段 / 完了条件</p>
+    <p><b>Anthropic 公式</b><br>ルールファイル / スキル / MCP / ツール / 自動実行</p>
+    <p><b>Anthropic 公式</b><br>道具立てを変えると33%→49%になった実験</p>
+    <p><b>OpenAI 公式</b><br>依頼文の定義と、精度を上げる介入の順序</p>
+    <p><b>Google 公式</b><br>依頼文の部品と、長い資料を渡すときの限界</p>
+    <p><b>Chroma（研究レポート）</b><br>入力が長いほど精度が落ちる（18モデルで検証）</p>
+    <p><b>研究論文（arXiv）</b><br>RAG（検索して渡す仕組み）の命名元</p>
+    <p><b>LangChain</b><br>AI本体の周りの「足場」に何が含まれるか</p>
+    <p><b>ASQ（米国品質協会）</b><br>PDCA サイクルの定義</p>
+    <p><b>パーソル総研 / 総務省</b><br>生成AI実態調査（n=3,000）/ 情報通信白書</p>
+  </div>
+  <p class="st-caption">各出典のURLは、配布する台本の出典対応表に記載しています</p>
+  <p class="page-number">23</p>
+</div>
+
+</body>
+</html>
