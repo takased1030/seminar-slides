@@ -1,0 +1,4 @@
+# このサイトは社内勉強会の資料置き場です。検索エンジンへの掲載を望みません。
+# noindex メタタグは HTML にしか書けず pptx / pdf に効かないため、robots.txt で全体を拒否します。
+User-agent: *
+Disallow: /
