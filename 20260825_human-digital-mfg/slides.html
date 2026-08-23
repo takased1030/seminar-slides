@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>スライド — 人×デジタルで作る製造工程(高専生向け・55分・11ページ)</title>
+<style>
+
+
+/* ===== tokens.css を内包(外部参照0件。単一の真実は slide_designsystem/tokens.css) ===== */
+/* ============================================================
+   スライド デザイントークン v0.1
+   - すべて 6桁hex(rgba / hsl / 8桁hex 禁止)
+   - グラデーション禁止・アニメーション禁止
+   - テーマは <body data-theme="..."> で切り替える
+   ============================================================ */
+
+/* ---------- 共通パレット(Anthropic公式ブランドカラー) ---------- */
+:root {
+  --palette-dark:       #141413;
+  --palette-light:      #faf9f5;
+  --palette-mid-gray:   #b0aea5;
+  --palette-light-gray: #e8e6dc;
+  --palette-orange:     #d97757;  /* Accent 主 */
+  --palette-blue:       #6a9bcc;  /* Accent 副 */
+  --palette-green:      #788c5d;  /* Accent 第三 */
+
+  /* ---------- タイポグラフィ ---------- */
+  /* 和文優先: Noto Sans JP を第一指定(2026-07-13 ユーザー決定・変換実測用)。
+     PPTXでは先頭ファミリ名が latin/ea 両方の typeface になる(§2.4 実測) */
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+
+  /* html2pptx が注入する正規化CSSの変数を上書き(2026-07-13 実測):
+     注入CSSは p/ul/ol/li と h1-h6 に要素セレクタで Arial を直指定するため、
+     この2変数の上書き+下の p,li ルールの両方で Noto Sans JP を強制する */
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  /* サイズ段階(px × 0.75 = pt)。階層: タイトル > キーメッセージ > ボディ(2026-07-13) */
+  --fs-cover-title: 64px;   /* 48pt */
+  --fs-cover-sub:   30px;   /* 22.5pt */
+  --fs-heading:     48px;   /* 36pt */
+  --fs-subheading:  30px;   /* 22.5pt */
+  --fs-keymsg:      34px;   /* 25.5pt キーメッセージ(タイトル直下) */
+  --fs-body:        24px;   /* 18pt */
+  --fs-body-sm:     22px;   /* 16.5pt 詰め込み系ボディ(カード・表・コード等) */
+  --fs-caption:     18px;   /* 13.5pt */
+  --fs-footnote:    14px;   /* 10.5pt ページ番号(下端マージン検査対象外) */
+  --fs-section-no:  104px;  /* 78pt 章番号 */
+  --fs-watermark:   200px;  /* 150pt 表紙ウォーターマーク(読ませない装飾。cover--wm 専用) */
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  /* ---------- スペーシング段階(任意値の混在禁止) ---------- */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 48px;
+  --sp-6: 64px;
+
+  /* キャンバス: 1280×720固定・セーフマージン48px以上 */
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --slide-pad: 64px;
+
+  --radius-card: 12px;
+  --border-w: 2px;
+}
+
+/* ===== 案B: claude-gray(落ち着いた灰紙)= 既定 ===== */
+body,
+body[data-theme="claude-gray"] {
+  --bg:             #e8e6dc;
+  --text:           #141413;
+  --text-secondary: #63615a;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #faf9f5;
+  --card-border:    #d5d3c8;
+  --code-bg:        #141413;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #dedbd0;
+  --line:           #d5d3c8;
+  --muted-bg:       #dedbd0;
+  --shadow-color:   #d5d3c8;
+  --venn-a:         #6a9bcc73;
+  --venn-b:         #788c5d73;
+  /* 適性ヒート表(heat)の淡色塗り(2026-07-13 図解16型全採用で追加) */
+  --heat-good:      #dfe6d2;
+  --heat-ok:        #dbe4ee;
+  --heat-part:      #f2ddd0;
+  --heat-no:        #dedbd0;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #b9573a;
+  --accent-strong:  #b9573a;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #f2ddd0;
+  --tint-blue:      #dbe4ee;
+  --tint-green:     #dfe6d2;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案C: claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+  --venn-a:         #6a9bcc8c;
+  --venn-b:         #788c5d8c;
+  --heat-good:      #2b3325;
+  --heat-ok:        #24303d;
+  --heat-part:      #3d2a22;
+  --heat-no:        #1d1d1b;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #d97757;
+  --accent-strong:  #e5977c;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #3d2a22;
+  --tint-blue:      #24303d;
+  --tint-green:     #2b3325;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案D: ink-citrus(エディトリアル。インクの輪郭+柑橘) ===== */
+body[data-theme="ink-citrus"] {
+  --bg:             #fbfbf7;
+  --text:           #20222c;
+  --text-secondary: #5f6370;
+  --accent:         #e8590c;
+  --accent-2:       #2b6cb0;
+  --accent-3:       #37803b;
+  --card-bg:        #fdfdfa;
+  --card-border:    #20222c;
+  --code-bg:        #20222c;
+  --code-text:      #f4f4ef;
+  --table-head-bg:  #edede4;
+  --line:           #c9cad1;
+  --muted-bg:       #f0f0ea;
+  --shadow-color:   #20222c;
+  --venn-a:         #2b6cb066;
+  --venn-b:         #37803b66;
+  --heat-good:      #e4eddb;
+  --heat-ok:        #dde8f3;
+  --heat-part:      #f8e3d3;
+  --heat-no:        #f0f0ea;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #e8590c;
+  --accent-strong:  #e8590c;
+  --accent-on:      #fdfdfa;
+  --tint-orange:    #f8e3d3;
+  --tint-blue:      #dde8f3;
+  --tint-green:     #e4eddb;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #20222c;
+  --wm-ink:         #2f323e;
+  --wm-text:        #fbfbf7;
+  --wm-sub:         #a8abb6;
+  --wm-line:        #3a3d4a;
+  --wm-accent:      #f4772e;
+}
+/* ===== 案F: cyber-terminal(端末風ダーク。緑+青+琥珀) ===== */
+body[data-theme="cyber-terminal"] {
+  --bg:             #0d1117;
+  --text:           #e6edf3;
+  --text-secondary: #8b949e;
+  --accent:         #3fb950;
+  --accent-2:       #58a6ff;
+  --accent-3:       #d29922;
+  --card-bg:        #161b22;
+  --card-border:    #30363d;
+  --code-bg:        #010409;
+  --code-text:      #e6edf3;
+  --table-head-bg:  #161b22;
+  --line:           #30363d;
+  --muted-bg:       #11151c;
+  --shadow-color:   #010409;
+  --venn-a:         #58a6ff59;
+  --venn-b:         #3fb95059;
+  --heat-good:      #12261a;
+  --heat-ok:        #132639;
+  --heat-part:      #2e2413;
+  --heat-no:        #11151c;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #3fb950;
+  --accent-strong:  #3fb950;
+  --accent-on:      #010409;
+  --tint-orange:    #2e2413;
+  --tint-blue:      #132639;
+  --tint-green:     #12261a;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #010409;
+  --wm-ink:         #12181f;
+  --wm-text:        #e6edf3;
+  --wm-sub:         #8b949e;
+  --wm-line:        #30363d;
+  --wm-accent:      #3fb950;
+}
+/* ===== 案H: blueprint(製図・図面風。鋼青×製図ブルー) =====
+   swiss-red は 2026-07-13 ユーザー破棄のため削除し、現行候補5テーマに同期 */
+body[data-theme="blueprint"] {
+  --bg:             #f2f5f7;
+  --text:           #24344d;
+  --text-secondary: #5d6b7e;
+  --accent:         #1e6bb8;
+  --accent-2:       #e8590c;
+  --accent-3:       #37b24c;
+  --card-bg:        #fbfcfd;
+  --card-border:    #c9d4de;
+  --code-bg:        #24344d;
+  --code-text:      #f2f5f7;
+  --table-head-bg:  #e3eaf0;
+  --line:           #c9d4de;
+  --muted-bg:       #e8eef3;
+  --shadow-color:   #c9d4de;
+  --venn-a:         #1e6bb866;
+  --venn-b:         #37b24c59;
+  --heat-good:      #ddf0e0;
+  --heat-ok:        #dbe9f6;
+  --heat-part:      #fae3d4;
+  --heat-no:        #e8eef3;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #1e6bb8;
+  --accent-strong:  #1e6bb8;
+  --accent-on:      #fbfcfd;
+  --tint-orange:    #fae3d4;
+  --tint-blue:      #dbe9f6;
+  --tint-green:     #ddf0e0;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #24344d;
+  --wm-ink:         #31445f;
+  --wm-text:        #f2f5f7;
+  --wm-sub:         #aebbca;
+  --wm-line:        #3d5273;
+  --wm-accent:      #6ab0ea;
+}
+
+/* ===== 骨格の基礎スタイル ===== */
+
+  /* デザインシステム共通のリセット(slide-samples / run-04 と同一)。
+     これが無いと padding が加算され 1280x720 にならない */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+  .page {
+    width: 1280px; height: 720px; background: var(--bg); color: var(--text);
+    overflow: hidden; position: relative;
+    padding: 48px var(--slide-pad) var(--slide-pad); margin: 0 auto 24px auto;
+  }
+  @media print { @page { size: 1280px 720px; margin: 0; } body { background: none; }
+    .page { margin: 0; page-break-after: always; } }
+
+  /* 中面(3部構成のうちタイトルとキーメッセージのみ確定。ボディは空欄) */
+  .slide-heading { font-family: var(--font-heading); font-size: var(--fs-heading);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 10px; }
+  .key-message { font-family: var(--font-heading); font-size: var(--fs-keymsg);
+    font-weight: 500; line-height: 1.35; color: var(--text-secondary);
+    margin: 0 0 12px; max-width: 1020px; }
+  .header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+  .page-number { position: absolute; right: 48px; bottom: 24px;
+    font-family: var(--font-heading); font-size: var(--fs-footnote); color: var(--text-secondary); }
+
+  /* 表紙(既定) */
+  .page--cover { display: flex; flex-direction: column; justify-content: center;
+    align-items: center; text-align: center; }
+  .cover-kicker { font-family: var(--font-heading); font-size: var(--fs-caption);
+    font-weight: 700; letter-spacing: 6px; color: var(--accent); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-title { font-family: var(--font-heading); font-size: var(--fs-cover-title);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-subtitle { font-size: var(--fs-cover-sub); color: var(--text-secondary);
+    margin: 0 0 var(--sp-5); line-height: 1.4; }
+  .page--cover .cover-meta { font-size: var(--fs-body); color: var(--text-secondary); margin: 0; }
+  .cover-wm { display: none; }
+
+  /* 表紙バリアント: ウォーターマーク(cover--wm)。原本 slide_designsystem/samples より写す */
+  body .page--cover.cover--wm {
+    background: var(--wm-bg); color: var(--wm-text);
+    align-items: flex-start; text-align: left;
+    justify-content: flex-end;
+    padding: 48px var(--slide-pad) var(--sp-6);
+  }
+  body .page--cover.cover--wm .cover-wm {
+    display: block; position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-56%);
+    font-family: var(--font-heading); font-size: var(--fs-watermark); font-weight: 900;
+    line-height: 1; letter-spacing: -0.02em; text-align: center; white-space: nowrap;
+    color: var(--wm-ink);
+  }
+  body .page--cover.cover--wm .cover-kicker {
+    position: absolute; top: 56px; left: var(--slide-pad); margin: 0; color: var(--wm-accent);
+  }
+  body .page--cover.cover--wm .slide-title {
+    position: relative; font-size: var(--fs-cover-title); color: var(--wm-text);
+    margin-bottom: var(--sp-3);
+  }
+  body .page--cover.cover--wm .slide-subtitle {
+    position: relative; font-size: var(--fs-caption); line-height: 1.9;
+    color: var(--wm-sub); margin-bottom: 0;
+  }
+  body .page--cover.cover--wm .cover-rule {
+    display: block; width: 100%; border-top: 1px solid var(--wm-line);
+    margin: var(--sp-5) 0 var(--sp-3);
+  }
+  body .page--cover.cover--wm .cover-meta {
+    position: relative; display: flex; width: 100%; justify-content: space-between;
+    align-items: baseline; font-size: var(--fs-caption); font-weight: 700; color: var(--wm-text);
+  }
+  body .page--cover.cover--wm .cover-date { font-weight: 400; letter-spacing: 2px; color: var(--wm-sub); }
+  body .page--cover.cover--wm .page-number { color: var(--wm-sub); }
+
+  /* ---- 表紙の回ローカル調整(2026-08-21 ユーザー指示) ---- */
+  body .page--cover.cover--wm .cover-wm {
+    font-size: calc(var(--fs-watermark) * 1.5);   /* 200px → 300px。直値を書かずトークンからの倍率で示す */
+    left: 170px;
+    right: auto;
+    text-align: left;
+  }
+
+
+.diagram-note { position: absolute; left: 64px; bottom: 24px; font-family: var(--font-heading); font-size: var(--fs-footnote); color: var(--text-secondary); }
+.fb-canvas { position: relative; height: 430px; }
+.fb-spine { position: absolute; }
+.fb-spine line { stroke: var(--text-secondary); stroke-width: 3; }
+.fb-spine polygon { fill: var(--text-secondary); }
+.fb-drop { position: absolute; border-left: 2px solid var(--text-secondary); }
+.fb-head { position: absolute; background: var(--tint-orange); border: 2px solid var(--accent); border-radius: var(--radius-card); display: flex; align-items: center; justify-content: center; text-align: center; }
+.fb-head p { font-size: var(--fs-body-sm); font-weight: 700; line-height: 1.4; color: var(--accent-heading); }
+.fb-cat { position: absolute; width: 280px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 14px 18px; }
+.fb-cat .fb-cat-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: 6px; }
+.fb-cat .fb-factor { font-size: var(--fs-footnote); line-height: 1.5; color: var(--text-secondary); }
+.fb-cat-title--1 { color: var(--cat-1); }
+.fb-cat-title--2 { color: var(--cat-2); }
+.fb-cat-title--3 { color: var(--cat-3); }
+.fb-cat-title--4 { color: var(--cat-4); }
+.fb-cat-title--5 { color: var(--cat-5); }
+.fb-cat-title--6 { color: var(--cat-6); }
+body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; }
+.summary-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.summary-item .summary-no { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; background: var(--accent); color: var(--accent-on); border-radius: 999px; padding: var(--sp-1) var(--sp-2); min-width: 64px; text-align: center; line-height: 1.2; }
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); }
+.bullet-list { list-style-position: outside; padding-left: 32px; }
+.bullet-list li { font-size: var(--fs-body); line-height: var(--lh-body); margin-bottom: var(--sp-2); }
+.bullet-list li b { font-weight: 700; }
+.card-row { display: flex; gap: var(--sp-3); }
+.card { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.card .card-no p, .summary-item .summary-no p { margin: 0; color: var(--accent-on); font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; line-height: inherit; }
+.card .card-no { display: inline-block; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; background: var(--accent); color: var(--accent-on); border-radius: 999px; padding: var(--sp-1) var(--sp-2); margin-bottom: var(--sp-1); }
+.card .card-no--2 { background: var(--accent-2); }
+.card .card-no--3 { background: var(--accent-3); }
+.card .card-title { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--text); margin-bottom: var(--sp-2); }
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+.card--shadow { box-shadow: 4px 4px 0px var(--shadow-color); }
+.card--hl-1 { background: var(--tint-orange); border-color: var(--accent); }
+.card--hl-2 { background: var(--tint-blue); border-color: var(--accent-2); }
+.card--hl-3 { background: var(--tint-green); border-color: var(--accent-3); }
+.card--key { background: var(--tint-orange); border-color: var(--accent); }
+.code-block { background: var(--code-bg); border-radius: var(--radius-card); padding: var(--sp-4); }
+.code-block p { color: var(--code-text); font-family: var(--font-mono); font-size: var(--fs-body-sm); line-height: 1.7; }
+.code-block .tok-comment { color: #b0aea5; }
+.code-block .tok-keyword { color: #6a9bcc; }
+.code-block .tok-string { color: #d97757; }
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.compare-col .compare-label { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; margin-bottom: var(--sp-3); }
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after { background: var(--tint-orange); border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-2); text-align: center; }
+.flow-step--current { background: var(--tint-orange); border-color: var(--accent); }
+.flow-step .flow-step-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); margin-bottom: var(--sp-1); }
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); }
+.flow-arrow { font-size: var(--fs-subheading); color: var(--text-secondary); font-family: var(--font-heading); font-weight: 700; }
+.venn-canvas { position: relative; height: 400px; }
+.set-kind { position: absolute; font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.set-box { position: absolute; border-radius: 24px; }
+.set-box--fill-a { background: var(--venn-a); }
+.set-box--fill-b { background: var(--venn-b); }
+.set-box--outline { border: 2px solid var(--accent-2); }
+.set-box--solid { background: var(--card-bg); border: 2px solid var(--card-border); }
+.set-label { position: absolute; font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body-sm); }
+.set-label--x { font-size: var(--fs-caption); color: var(--accent-strong); }
+.set-label--sub { font-size: var(--fs-caption); line-height: 1.5; }
+.fc-canvas { position: relative; height: 340px; }
+.fc-box { position: absolute; background: var(--card-bg); border: 2px solid var(--card-border); text-align: center; display: flex; align-items: center; justify-content: center; }
+.fc-box p { font-size: 18px; font-weight: 700; line-height: 1.4; }
+.fc-box--terminal { border-radius: 999px; border-color: var(--accent); }
+.fc-box--terminal-end { background: var(--tint-orange); border-color: var(--accent); }
+.fc-box--process { border-radius: 6px; }
+.fc-diamond { position: absolute; }
+.fc-diamond polygon { fill: var(--tint-blue); stroke: var(--accent-2); stroke-width: 2; stroke-linejoin: round; }
+.fc-box--decision-text { background: none; border: none; }
+.fc-arrow { position: absolute; font-size: var(--fs-body); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.fc-tag { position: absolute; font-size: 14px; font-weight: 700; color: var(--accent-2); font-family: var(--font-heading); }
+.fc-line { position: absolute; }
+.fc-line--h { border-top: 2px solid var(--text-secondary); }
+.fc-line--v { border-left: 2px solid var(--text-secondary); }
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--c1 { width: 240px; }
+.dtable-cell--c2 { width: 440px; }
+.dtable-cell--c3 { width: 440px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+.body-lead { font-size: var(--fs-body); line-height: var(--lh-body); margin-bottom: var(--sp-3); max-width: 1000px; }
+.body-cap { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-3); max-width: 1050px; }
+/* ---------- まとめ(summary) ---------- */
+.summary-item { display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line); }
+.summary-item .summary-no { font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 56px;
+  line-height: 1.2; }
+.summary-item .summary-no--2 { color: var(--accent-2); }
+.summary-item .summary-no--3 { color: var(--accent-3); }
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); max-width: 940px; }
+/* ---------- アジェンダ(縦リスト) ---------- */
+.agenda-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: 14px 0; border-bottom: 1px solid var(--line); }
+.agenda-no { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; min-width: 120px; line-height: 1.25; }
+.agenda-no--1 { color: var(--accent); }
+.agenda-no--2 { color: var(--accent-2); }
+.agenda-no--3 { color: var(--accent-3); }
+.agenda-no--4 { color: var(--layer-loop); }
+.agenda-no--5 { color: var(--accent); }
+.agenda-text { font-size: var(--fs-body); line-height: 1.35; padding-top: 4px; max-width: 900px; }
+/* ---------- 箇条書き ---------- */
+.bullet-list { list-style-position: outside; padding-left: 28px; }
+.bullet-list li { font-size: var(--fs-body-sm); line-height: var(--lh-body); margin-bottom: var(--sp-1); }
+.bullet-list li b { font-weight: 700; }
+/* ---------- カード(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.card--tight { padding: var(--sp-3); }
+.card .card-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent); margin-bottom: var(--sp-1); }
+.card .card-no--2 { color: var(--accent-2); }
+.card .card-no--3 { color: var(--accent-3); }
+.card .card-title { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--text); margin-bottom: var(--sp-2); }
+.card .card-title--sm { font-size: var(--fs-body); }
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+/* ---------- 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.compare-col .compare-label { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; margin-bottom: var(--sp-3); }
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after { border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+/* ---------- フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-2); text-align: center; }
+.flow-step .flow-step-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); margin-bottom: var(--sp-1); }
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); line-height: 1.4; }
+.flow-arrow { font-size: var(--fs-subheading); color: var(--accent); font-family: var(--font-heading); font-weight: 700; }
+/* ---------- ロジックツリー(tree) ---------- */
+.tree-canvas { position: relative; height: 380px; }
+.tree-node { position: absolute; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-2) var(--sp-3); }
+.tree-node p { font-size: var(--fs-body-sm); font-weight: 700; }
+.tree-node p.tree-sub { font-size: var(--fs-caption); color: var(--text-secondary); font-weight: 400; margin-top: 4px; line-height: 1.45; }
+.tree-node--root { border-color: var(--accent); border-width: 3px; }
+.tree-line { position: absolute; }
+.tree-line--h { border-top: 2px solid var(--text-secondary); }
+.tree-line--v { border-left: 2px solid var(--text-secondary); }
+/* ---------- 入れ子(layers・同心) ---------- */
+.nest-canvas { position: relative; height: 380px; }
+.nest-box { position: absolute; border-radius: var(--radius-card); }
+.nest-box p { font-family: var(--font-heading); font-weight: 700; padding: 10px 18px; }
+.nest-box p.nest-sub { font-weight: 400; font-size: var(--fs-caption); color: var(--text-secondary); padding: 0 18px 8px; }
+.nest-outer { border: 3px solid var(--layer-harness); background: var(--muted-bg); }
+.nest-mid { border: 3px solid var(--layer-context); background: var(--card-bg); }
+.nest-inner { border: 3px solid var(--layer-prompt); background: var(--muted-bg); text-align: center; }
+.nest-outer > p:first-child { color: var(--layer-harness); font-size: var(--fs-body-sm); }
+.nest-mid   > p:first-child { color: var(--layer-context); font-size: var(--fs-body-sm); }
+.nest-inner > p:first-child { color: var(--layer-prompt); font-size: var(--fs-body-sm); }
+/* PDCA(ループ)パネル */
+.pdca-panel { position: absolute; border: 3px solid var(--layer-loop); border-radius: var(--radius-card); background: var(--muted-bg); padding: var(--sp-3) var(--sp-3) var(--sp-2); }
+.pdca-head { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: var(--layer-loop); margin-bottom: 6px; }
+.pdca-item { background: var(--card-bg); border: 2px solid var(--layer-loop); border-radius: 8px; padding: 5px 16px; }
+.pdca-item p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; line-height: 1.2; }
+.pdca-arw { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin: 1px 0; line-height: 1; }
+.pdca-back { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin-top: 4px; }
+/* ---------- 強調バンド(演習) ---------- */
+.emph-band { background: var(--card-bg); border: 3px solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-4); text-align: center; }
+.emph-band p { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--accent); }
+/* S6: 図名(図の見出し) */
+.fig-title { position: absolute; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+.page--hcards .body-cap { margin-top: 4px; }
+/* ① CLAUDE.md / skills の説明カード */
+.page--hcards .card--tight { padding: 16px 20px; }
+.page--hcards .card--tight .card-title { margin-bottom: 6px; }
+.an-rows { display: flex; flex-direction: column; gap: 14px; margin-top: var(--sp-1); }
+.an-row { display: flex; align-items: stretch; gap: var(--sp-2); }
+.an-pill { width: 132px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+.an-pill p { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: #faf9f5; }
+.an-pill--role { background: var(--cat-1); }
+.an-pill--ctx { background: var(--cat-2); }
+.an-pill--inst { background: var(--cat-3); }
+.an-pill--format { background: var(--cat-4); }
+.an-text { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); display: flex; align-items: center; padding: 12px 22px; }
+.an-text p { font-family: var(--font-mono); font-size: var(--fs-body-sm); }
+.an-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); }
+.ch-thread { display: flex; flex-direction: column; gap: 10px; width: 1020px; margin: 0 auto; }
+.ch-bubble { max-width: 660px; border-radius: var(--radius-card); padding: 10px 18px; }
+.ch-bubble--user { align-self: flex-end; background: var(--muted-bg); border: 2px solid var(--card-border); }
+.ch-bubble--ai { align-self: flex-start; background: var(--card-bg); border: 2px solid var(--accent); }
+.ch-bubble--ai-final { background: var(--tint-orange); }
+.ch-speaker { font-family: var(--font-heading); font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.ch-bubble--user .ch-speaker { color: var(--accent); }
+.ch-bubble--ai .ch-speaker { color: var(--accent-2); }
+.ch-text { font-size: var(--fs-caption); line-height: 1.5; }
+.ch-note { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ---- この回の局所調整 ---- */
+  .fc-box p { font-size: var(--fs-caption); }
+  .fb-cat { padding: 10px 14px; }
+  .fb-cat .fb-factor { font-size: var(--fs-footnote); line-height: 1.55; }
+  .dtable-cell { padding: 7px var(--sp-2); }
+  .dtable-cell p { font-size: var(--fs-caption); }
+  .flow-step-sub { font-size: var(--fs-footnote); }
+  /* p6 は3行×2列に増えたので、囲みの余白を詰めて下端余白48pxを確保する */
+  .compare-col { padding: var(--sp-2) var(--sp-3); }
+  .flow-step { padding: 14px var(--sp-2); }
+  .card--tight { padding: 14px 18px; }
+  /* 行数検査は「高さ÷行高」で数えるため、line-height 未指定の要素は
+     1行でも2行と誤判定される。検査対象の小見出しに明示的な行高を与える。 */
+  .card .card-no, .compare-label, .fc-tag, .fig-title, .set-label { line-height: 1.25; }
+  /* .card-no は12型サンプル(バッジ)と16型系(カード内ラベル)で別部品として定義されており、
+     両方を取り込むと padding/display が混ざる。カード内ラベルの側に正規化する。 */
+  .card .card-no { display: block; padding: 0; }
+  /* summary-no は12型サンプル(オレンジ地のピル)と16型系(色つき数字)で二重定義されており、
+     後勝ちで「オレンジ地にオレンジ文字」になる。地の側に色を持たせ、文字は白へ正規化する。 */
+  .summary-item .summary-no { color: var(--accent-on); }
+  .summary-item .summary-no--2 { background: var(--accent-2); color: var(--accent-on); }
+  .summary-item .summary-no--3 { background: var(--accent-3); color: var(--accent-on); }
+</style>
+</head>
+
+<body data-theme="claude-dark">
+
+<!-- P1: 表紙(ウォーターマーク型・英字=DX) -->
+<div class="page page--cover cover--wm" data-goal="-" data-minutes="0.5">
+  <div class="cover-wm">DX</div>
+  <p class="cover-kicker">MANUFACTURING × DIGITAL</p>
+  <h1 class="slide-title">人×デジタルで作る製造工程</h1>
+  <p class="slide-subtitle">単純に見える仕事が、どれだけ奥が深いか</p>
+  <div class="cover-rule"></div>
+  <p class="cover-meta"><span>発表者: 高瀬</span><span class="cover-date">2026.08.25 – 27</span></p>
+  <p class="page-number">01 / 11</p>
+</div>
+<!-- P2: 製造の仕事 -->
+<div class="page" data-goal="G1" data-minutes="2.0">
+  <h2 class="slide-heading">製造の仕事</h2>
+  <p class="key-message">良いモノを安全・安定・ムダなく作り続ける</p>
+  <div class="header-rule"></div>
+  <div class="fc-canvas" style="height:306px;"><div class="fc-box fc-box--process" style="left:470px; top:0px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">企画</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">何を作るか決める</p></div><p class="fc-arrow" style="left:552px; top:50px;">↓</p><div class="fc-box fc-box--process" style="left:470px; top:64px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">設計</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">レシピを決める</p></div><p class="fc-arrow" style="left:552px; top:114px;">↓</p><div class="fc-box fc-box--process" style="left:470px; top:128px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">試作・段取り</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">一度作って味見する</p></div><p class="fc-arrow" style="left:552px; top:178px;">↓</p><div class="fc-box fc-box--process" style="left:250px; top:192px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">調達</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">買い出し</p></div><p class="fc-arrow" style="left:436px; top:202px;">→</p><div class="fc-box fc-box--process" style="left:470px; top:192px; width:180px; height:50px; flex-direction:column; border-color:var(--accent); background:var(--tint-orange); border-width:3px;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">製造</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">調理する</p></div><p class="fc-arrow" style="left:656px; top:202px;">→</p><div class="fc-box fc-box--process" style="left:690px; top:192px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">物流</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">運ぶ・保管する</p></div><p class="fc-arrow" style="left:876px; top:202px;">→</p><div class="fc-box fc-box--process" style="left:910px; top:192px; width:180px; height:50px; flex-direction:column;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">出荷・納品</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">盛り付けて出す</p></div><p class="fc-arrow" style="left:552px; top:244px;">↑</p><div class="fc-box fc-box--process" style="left:470px; top:256px; width:180px; height:50px; flex-direction:column; border-style:dashed;"><p style="font-size:var(--fs-caption); font-weight:700; line-height:1.25;">保全</p><p style="font-size:var(--fs-footnote); line-height:1.25; color:var(--text-secondary);">コンロや鍋を整える</p></div><p class="fig-title" style="left:0px; top:60px; width:220px; color:var(--accent-2);">ECM｜縦の流れ<br><span style="font-weight:400;">何をどう作るかを決める</span></p><p class="fig-title" style="left:0px; top:198px; width:220px; color:var(--accent-3);">SCM｜横の流れ<br><span style="font-weight:400;">モノが調達から納品へ動く</span></p><p class="fig-title" style="left:670px; top:266px; width:260px;"><span style="font-weight:400;">保全は、<br>製造を止めないための土台</span></p></div><p class="fig-title" style="position:static; margin:10px 0 5px; color:var(--accent-strong);">出力｜<b>QCDSE</b>　製造から出てきたものを、この五つで測る</p><div class="dtable "><div class="dtable-row dtable-row--head"><div class="dtable-cell" style="width:230px"><p><b style="color:var(--accent-strong)">Q</b>　品質</p></div><div class="dtable-cell" style="width:230px"><p><b style="color:var(--accent-strong)">C</b>　コスト</p></div><div class="dtable-cell" style="width:230px"><p><b style="color:var(--accent-strong)">D</b>　納期</p></div><div class="dtable-cell" style="width:230px"><p><b style="color:var(--accent-strong)">S</b>　安全</p></div><div class="dtable-cell" style="width:232px"><p><b style="color:var(--accent-strong)">E</b>　環境</p></div></div><div class="dtable-row"><div class="dtable-cell" style="width:230px"><p>味・栄養・新鮮さ</p></div><div class="dtable-cell" style="width:230px"><p>電気代・材料費・人件費</p></div><div class="dtable-cell" style="width:230px"><p>出てくるまでの早さ</p></div><div class="dtable-cell" style="width:230px"><p>作る人が無事か</p></div><div class="dtable-cell" style="width:232px"><p>厨房が片付いているか</p></div></div></div><p class="fig-title" style="position:static; margin-top:5px; color:var(--text-secondary);">↻ 出力を見て、次の企画・設計へ返す。考える部署や人が、何人もいる。</p>
+  <p class="page-number">02 / 11</p>
+</div>
+<!-- P3: 製造の難しさ — 管理項目が多い -->
+<div class="page" data-goal="G1,G2" data-minutes="1.0">
+  <h2 class="slide-heading">製造の難しさ — 管理項目が多い</h2>
+  <p class="key-message">要因が動くから、毎回ばらつく</p>
+  <div class="header-rule"></div>
+  <div class="an-row" style="gap:8px; margin-bottom:12px;"><div class="an-pill an-pill--role" style="width:auto; flex:1; padding:5px 0; box-shadow:0 0 0 3px var(--accent);"><p>Q 品質</p></div><div class="an-pill an-pill--ctx" style="width:auto; flex:1; padding:5px 0; opacity:0.4;"><p>C コスト</p></div><div class="an-pill an-pill--inst" style="width:auto; flex:1; padding:5px 0; opacity:0.4;"><p>D 納期</p></div><div class="an-pill an-pill--format" style="width:auto; flex:1; padding:5px 0; opacity:0.4;"><p>S 安全</p></div><div class="an-pill an-pill--role" style="width:auto; flex:1; padding:5px 0; opacity:0.4;"><p>E 環境</p></div></div><div class="fb-canvas" style="height:346px;"><div class="fb-cat" style="left:20px; top:0px;"><p class="fb-cat-title fb-cat-title--1">人</p><p class="fb-factor">作業者の熟練度<br>交代・引き継ぎ<br>体調・疲れ</p></div><div class="fb-cat" style="left:320px; top:0px;"><p class="fb-cat-title fb-cat-title--2">機械</p><p class="fb-factor">刃物や型の摩耗<br>治具のガタ<br>段取り替えの精度</p></div><div class="fb-cat" style="left:620px; top:0px;"><p class="fb-cat-title fb-cat-title--3">材料</p><p class="fb-factor">ロットの違い<br>保管の状態<br>仕入先の違い</p></div><div class="fb-drop" style="left:160px; top:118px; height:52px;"></div><div class="fb-drop" style="left:460px; top:118px; height:52px;"></div><div class="fb-drop" style="left:760px; top:118px; height:52px;"></div><svg class="fb-spine" style="left:20px; top:158px; width:936px; height:24px;" viewBox="0 0 936 24"><line x1="0" y1="12" x2="920" y2="12"></line><polygon points="918,3 934,12 918,21"></polygon></svg><div class="fb-drop" style="left:160px; top:170px; height:52px;"></div><div class="fb-drop" style="left:460px; top:170px; height:52px;"></div><div class="fb-drop" style="left:760px; top:170px; height:52px;"></div><div class="fb-cat" style="left:20px; top:222px;"><p class="fb-cat-title fb-cat-title--4">方法</p><p class="fb-factor">手順の解釈違い<br>加工条件の設定<br>作業標準の更新漏れ</p></div><div class="fb-cat" style="left:320px; top:222px;"><p class="fb-cat-title fb-cat-title--5">測定</p><p class="fb-factor">測定器の校正<br>測る場所とタイミング<br>測る人による差</p></div><div class="fb-cat" style="left:620px; top:222px;"><p class="fb-cat-title fb-cat-title--6">環境</p><p class="fb-factor">温度・湿度<br>振動<br>粉じん・清浄度</p></div><div class="fb-head" style="left:962px; top:123px; width:176px; height:94px;"><p style="font-size:var(--fs-heading); line-height:1.1;">品質</p></div></div><p class="body-cap">いま開いているのは <b>Q（品質）</b> の例。C・D・S・E にも同じだけ管理項目がある。次は同じことを料理で。</p>
+  <p class="page-number">03 / 11</p>
+</div>
+<!-- P4: グループワーク①（20分） -->
+<div class="page" data-goal="G2" data-minutes="23.0">
+  <h2 class="slide-heading">グループワーク①（20分）</h2>
+  <p class="key-message">味噌汁の味を毎回同じように出すにはどうすればいいか考えよう</p>
+  <div class="header-rule"></div>
+  <p class="fig-title" style="position:static; margin-bottom:6px; color:var(--accent-2);">① 作る工程を描く<span style="font-weight:400;">　開始から完成まで。判断が入るところは ◇ で</span></p><div class="fc-canvas" style="height:128px;"><div class="fc-box fc-box--terminal" style="left:0px; top:0px; width:92px; height:52px;"><p>開始</p></div><div style="position:absolute; left:126px; top:0px; width:170px; height:52px; border:2px dashed var(--card-border); border-radius:6px; background:var(--muted-bg);"></div><svg style="position:absolute; left:330px; top:0px; width:170px; height:52px;" viewBox="0 0 170 52"><polygon points="85,3 167,26 85,49 3,26" fill="var(--muted-bg)" stroke="var(--accent-2)" stroke-width="2" stroke-dasharray="6 4"></polygon></svg><div style="position:absolute; left:534px; top:0px; width:170px; height:52px; border:2px dashed var(--card-border); border-radius:6px; background:var(--muted-bg);"></div><div style="position:absolute; left:738px; top:0px; width:170px; height:52px; border:2px dashed var(--card-border); border-radius:6px; background:var(--muted-bg);"></div><div class="fc-box fc-box--terminal fc-box--terminal-end" style="left:942px; top:0px; width:106px; height:52px;"><p>完成</p></div><p class="fc-arrow" style="left:98px; top:17px;">→</p><p class="fc-arrow" style="left:302px; top:17px;">→</p><p class="fc-arrow" style="left:506px; top:17px;">→</p><p class="fc-arrow" style="left:710px; top:17px;">→</p><p class="fc-arrow" style="left:914px; top:17px;">→</p><p class="fc-tag" style="left:520px; top:-6px;">はい</p><p class="fc-tag" style="left:342px; top:62px;">いいえ</p><p class="fc-arrow" style="left:404px; top:56px;">↓</p><div style="position:absolute; left:330px; top:84px; width:170px; height:52px; border:2px dashed var(--card-border); border-radius:6px; background:var(--muted-bg);"></div><p class="fc-arrow" style="left:506px; top:101px;">→</p><p class="fig-title" style="left:540px; top:96px; width:420px;"><span style="font-weight:400;">破線のところに、やることと判断を書き込む</span></p></div><p class="fig-title" style="position:static; margin:8px 0 5px; color:var(--accent-3);">② 味がばらつく原因を書き出す<span style="font-weight:400;">　六つの分類ごとに、思いつくだけ</span></p><div class="fb-canvas" style="height:166px;"><div class="fb-cat" style="left:20px; top:0px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--1">人</p></div><div class="fb-cat" style="left:320px; top:0px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--2">機械</p></div><div class="fb-cat" style="left:620px; top:0px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--3">材料</p></div><div class="fb-drop" style="left:160px; top:58px; height:24px;"></div><div class="fb-drop" style="left:460px; top:58px; height:24px;"></div><div class="fb-drop" style="left:760px; top:58px; height:24px;"></div><svg class="fb-spine" style="left:20px; top:70px; width:936px; height:24px;" viewBox="0 0 936 24"><line x1="0" y1="12" x2="920" y2="12"></line><polygon points="918,3 934,12 918,21"></polygon></svg><div class="fb-drop" style="left:160px; top:82px; height:28px;"></div><div class="fb-drop" style="left:460px; top:82px; height:28px;"></div><div class="fb-drop" style="left:760px; top:82px; height:28px;"></div><div class="fb-cat" style="left:20px; top:110px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--4">方法</p></div><div class="fb-cat" style="left:320px; top:110px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--5">測定</p></div><div class="fb-cat" style="left:620px; top:110px; height:58px; border-style:dashed; background:var(--muted-bg);"><p class="fb-cat-title fb-cat-title--6">環境</p></div><div class="fb-head" style="left:962px; top:44px; width:176px; height:70px;"><p style="font-size:var(--fs-heading); line-height:1.1;">味</p></div></div><div class="emph-band" style="margin-top:8px; padding:12px var(--sp-4);"><p>豆腐・味噌・水だけの味噌汁 ／ ホワイトボードと模造紙に ／ 20分</p></div>
+  <p class="page-number">04 / 11</p>
+</div>
+<!-- P5: 解答例 -->
+<div class="page" data-goal="G2" data-minutes="1.75">
+  <h2 class="slide-heading">解答例</h2>
+  <!-- キーメッセージなし: 答えを見せて考えさせるページのため(規約の例外・理由は intake.md) -->
+  <div class="header-rule"></div>
+  <div style="position:relative; height:340px; border:2px dashed var(--card-border); border-radius:var(--radius-card); background:var(--muted-bg);"><p style="position:absolute; left:20px; top:14px; font-family:var(--font-heading); font-size:var(--fs-footnote); color:var(--text-secondary); letter-spacing:2px;">解答例のフローチャート — 貼り付け領域</p></div><div class="ch-thread" style="display:flex; flex-direction:row; align-items:center; margin-top:18px; gap:var(--sp-3);"><svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true" style="flex:none; color:var(--accent-2);"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="17" r="11"></circle><path d="M44 28 V56"></path><path d="M44 36 L28 48 M44 36 L60 24"></path><path d="M44 56 L31 78 M44 56 L57 78"></path></g></svg><div class="ch-bubble ch-bubble--user" style="flex:1;"><p class="ch-text">単純な料理なのに、<br>こんなにも管理する項目が多いんだ！</p></div><svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true" style="flex:none; color:var(--accent-3);"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="17" r="11"></circle><path d="M44 28 V56"></path><path d="M44 36 L27 32 M44 36 L61 43"></path><path d="M44 56 L31 78 M44 56 L57 78"></path></g></svg><div class="ch-bubble ch-bubble--ai-final" style="flex:1;"><p class="ch-text">品質以外にも、<br>コストや時間も管理せなあかんねん…</p></div></div>
+  <p class="page-number">05 / 11</p>
+</div>
+<!-- P6: 製造におけるDX -->
+<div class="page" data-goal="G3" data-minutes="2.0">
+  <h2 class="slide-heading">製造におけるDX</h2>
+  <p class="key-message">データで、仕事のやり方そのものを変える</p>
+  <div class="header-rule"></div>
+  <div class="flow-row" style="margin-top:0"><div class="flow-step"><p class="flow-step-no">① 集める</p><p class="flow-step-text">記録に残す</p><p class="flow-step-sub">温度・時間・分量・<br>作り手を数字にする</p></div><p class="flow-arrow">→</p><div class="flow-step"><p class="flow-step-no">② つなぐ</p><p class="flow-step-text">味と結びつける</p><p class="flow-step-sub">どの条件のとき美味しかったか</p></div><p class="flow-arrow">→</p><div class="flow-step"><p class="flow-step-no">③ 変える</p><p class="flow-step-text">決め方が変わる</p><p class="flow-step-sub">勘から数字へ</p></div></div><div class="compare-row" style="margin-top:var(--sp-3);"><div class="compare-col compare-col--before"><p class="compare-label">人駆動型の仕事</p><ul class="bullet-list"><li>味見して、人が気づく</li><li>「もう少し煮よう」と、人が決めて動かす</li><li>うまくいった理由は、その人の中に残る</li></ul></div><div class="compare-col compare-col--after"><p class="compare-label">データ駆動型の仕事</p><ul class="bullet-list"><li>温度がずれたと、センサーが気づく</li><li>決めておいた通りに、火加減が自動で変わる</li><li>人は結果を確かめ、基準がずれていたら直す</li></ul></div></div><p class="body-cap">記録を取っただけでは、まだDXではない。決め方が変わって初めて、仕事のやり方が変わったと言える。</p>
+  <p class="page-number">06 / 11</p>
+</div>
+<!-- P7: グループワーク②（10分） -->
+<div class="page" data-goal="G3" data-minutes="16.75">
+  <h2 class="slide-heading">グループワーク②（10分）</h2>
+  <p class="key-message">勘で決めている判断を見つけ、データで決める形に変えよう</p>
+  <div class="header-rule"></div>
+  <div style="position:relative; height:340px; border:2px dashed var(--card-border); border-radius:var(--radius-card); background:var(--muted-bg);"><p style="position:absolute; left:20px; top:14px; font-family:var(--font-heading); font-size:var(--fs-footnote); color:var(--text-secondary); letter-spacing:2px;">さきほど描いた工程図（解答例）— 貼り付け領域</p></div><div class="ch-thread" style="display:flex; flex-direction:row; align-items:center; margin-top:18px; gap:var(--sp-3);"><svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true" style="flex:none; color:var(--accent-2);"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="17" r="11"></circle><path d="M44 28 V56"></path><path d="M44 36 L28 48 M44 36 L60 24"></path><path d="M44 56 L31 78 M44 56 L57 78"></path></g></svg><div class="ch-bubble ch-bubble--user" style="flex:1;"><p class="ch-text">フローチャートの「判断」のところ、<br>何を見て決めてる？</p></div><svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true" style="flex:none; color:var(--accent-3);"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="44" cy="17" r="11"></circle><path d="M44 28 V56"></path><path d="M44 36 L27 32 M44 36 L61 43"></path><path d="M44 56 L31 78 M44 56 L57 78"></path></g></svg><div class="ch-bubble ch-bubble--ai-final" style="flex:1;"><p class="ch-text">その判断、<br>勘やなくて数字で決められへん？</p></div></div>
+  <p class="page-number">07 / 11</p>
+</div>
+<!-- P8: 解答例 -->
+<div class="page" data-goal="G3" data-minutes="1.75">
+  <h2 class="slide-heading">解答例</h2>
+  <!-- キーメッセージなし: 答えを見せて考えさせるページのため(規約の例外・理由は intake.md) -->
+  <div class="header-rule"></div>
+  <div style="position:relative; height:365px; border:2px dashed var(--card-border); border-radius:var(--radius-card); background:var(--muted-bg);"><p style="position:absolute; left:20px; top:14px; font-family:var(--font-heading); font-size:var(--fs-footnote); color:var(--text-secondary); letter-spacing:2px;">改善後のフローチャート（データで決めるように変えた版） — 貼り付け領域</p></div><p class="body-cap">増えた線は、出てきた結果をもう一度作り方に戻している。測って、ずれたら戻す。エアコンが設定温度を保つのと同じ形。<br>ただし、何を測るか・狙いをどこに置くかを決めるのは人。</p>
+  <p class="page-number">08 / 11</p>
+</div>
+<!-- P9: 日本の製造業がいま抱えている問題 -->
+<div class="page" data-goal="G4" data-minutes="2.0">
+  <h2 class="slide-heading">日本の製造業がいま抱えている問題</h2>
+  <p class="key-message">人手は減るのに、管理は増えていく</p>
+  <div class="header-rule"></div>
+  <div class="card-row"><div class="card"><p class="card-no">問題 1</p><p class="card-title card-title--sm">人が足りない</p><p class="card-text">働き手が減り、<br>若い人が現場を選びにくい</p></div><div class="card"><p class="card-no card-no--2">問題 2</p><p class="card-title card-title--sm">管理のレベルが上がる</p><p class="card-text">見る項目が増え、<br>やり方も高度になる。<br>多品種少量も効く</p></div><div class="card"><p class="card-no card-no--3">問題 3</p><p class="card-title card-title--sm">デジタル化が追いつかない</p><p class="card-text">担う人がまた足りず、<br>現場のやり方も揃っていない</p></div></div><div class="emph-band" style="margin-top:var(--sp-3);"><p>三つは絡んでいる ／ 人手は減るのに、管理は増えていく</p></div>
+  <p class="page-number">09 / 11</p>
+</div>
+<!-- P10: 人がする仕事と、デジタルがする仕事 -->
+<div class="page" data-goal="G4" data-minutes="2.0">
+  <h2 class="slide-heading">人がする仕事と、デジタルがする仕事</h2>
+  <p class="key-message">創るのは人、こなすのはデジタル</p>
+  <div class="header-rule"></div>
+  <div class="venn-canvas" style="height:330px;"><div class="set-box" style="position:absolute; left:20px; top:24px; width:660px; height:282px; border:2px solid var(--accent-2); border-radius:var(--radius-card); background:var(--venn-a);"></div><div class="set-box" style="position:absolute; left:472px; top:24px; width:660px; height:282px; border:2px solid var(--accent-3); border-radius:var(--radius-card); background:var(--venn-b);"></div><div style="position:absolute; left:20px; top:24px; width:452px; height:282px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 16px;"><p class="set-label" style="position:static; font-family:var(--font-heading); font-size:var(--fs-subheading); font-weight:700; color:var(--accent-2);">人</p><p class="set-label set-label--sub" style="position:static; margin-top:14px; line-height:1.9;">目的と要件を決める<br>設備や製品を設計する<br>合意をつくる<br>安全かどうかを判断する</p></div><div style="position:absolute; left:680px; top:24px; width:452px; height:282px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 16px;"><p class="set-label" style="position:static; font-family:var(--font-heading); font-size:var(--fs-subheading); font-weight:700; color:var(--accent-3);">デジタル</p><p class="set-label set-label--sub" style="position:static; margin-top:14px; line-height:1.9;">大量に速く正確に処理する<br>繰り返す<br>予測する</p></div><div style="position:absolute; left:472px; top:24px; width:208px; height:282px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 16px;"><p class="set-label set-label--x" style="position:static; font-size:var(--fs-body); line-height:1.7; font-weight:700; color:var(--accent-heading);">標準化<br>管理</p></div></div><p class="body-cap">役割を分けると、楽に・速く・正確になる。人が減った分を機械で埋める話ではなく、人が人にしかできない仕事へ動ける話。</p>
+  <p class="page-number">10 / 11</p>
+</div>
+<!-- P11: まとめ -->
+<div class="page" data-goal="-" data-minutes="2.25">
+  <h2 class="slide-heading">まとめ</h2>
+  <!-- 進行要素(data-goal="-")のためキーメッセージは対象外: outline-guide §3-0 -->
+  <div class="header-rule"></div>
+  <div class="summary-item"><p class="summary-no summary-no--1">01</p><p class="summary-text">製造の仕事は、良いモノを安全・安定・ムダなく作り続けること</p></div><div class="summary-item"><p class="summary-no summary-no--2">02</p><p class="summary-text">難しさは、ブレなく作るための管理項目がとても多いこと</p></div><div class="summary-item"><p class="summary-no summary-no--3">03</p><p class="summary-text">データで、仕事のやり方そのものを変えるのがDX</p></div><div class="summary-item"><p class="summary-no summary-no--4">04</p><p class="summary-text">創るのは人、こなすのはデジタル。標準化と管理は両方でやる</p></div><div class="emph-band" style="margin-top:var(--sp-2);"><p>製造の仕事は作り方を作り、決めた通りに作って管理する</p></div>
+  <p class="page-number">11 / 11</p>
+</div>
+
+
+
+</body></html>
