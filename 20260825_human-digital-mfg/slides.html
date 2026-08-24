@@ -589,7 +589,10 @@ body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; 
   .card .card-no, .compare-label, .fc-tag, .fig-title, .set-label { line-height: 1.25; }
   /* .card-no は12型サンプル(バッジ)と16型系(カード内ラベル)で別部品として定義されており、
      両方を取り込むと padding/display が混ざる。カード内ラベルの側に正規化する。 */
-  .card .card-no { display: block; padding: 0; }
+  /* 12型サンプルの .card-no は「オレンジ地に白文字のピル」、16型系は「色つきの文字」。
+     両方効くと地はピルのまま・文字色だけ上書きされ、同色になって文字が消える
+     (2026-08-25 lint_contrast が検出。比1.00)。カード内ラベル側へ正規化する。 */
+  .card .card-no { display: block; padding: 0; background: none; }
   /* summary-no は12型サンプル(オレンジ地のピル)と16型系(色つき数字)で二重定義されており、
      後勝ちで「オレンジ地にオレンジ文字」になる。地の側に色を持たせ、文字は白へ正規化する。 */
   .summary-item .summary-no { color: var(--accent-on); }
