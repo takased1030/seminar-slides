@@ -163,6 +163,9 @@
     if (line.indexOf('# ') === 0 && !docTitle) { docTitle = line.replace(/^#\s*/, ''); return; }
     var m = line.match(head);
     if (m) { cur = { num: m[1], title: m[2] || '', time: m[3] || '', text: [] }; slides.push(cur); return; }
+    // 台本以外の ## セクション(分量検算表・出典対応表・登壇者向けメモ)が来たら台本は終わり。
+    // ここで閉じないと、最後のスライドのカードに付録が全部吸い込まれて読み上げられる(2026-08-29 実測)。
+    if (line.indexOf('## ') === 0) { cur = null; return; }
     if (!cur) return;
     var t = line.trim();
     if (!t || t.indexOf('→') === 0) return;
