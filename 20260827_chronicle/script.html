@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>台本 — XXX Chronicle（現場の記録アプリ）紹介（想定 20分／300字=1分換算）</title>
+<style>
+  :root {
+    --bg: #EDEAE2; --surface: #F7F5EF; --ink: #23241F; --muted: #6E6A5E;
+    --accent: #C2562B; --accent-soft: rgba(194, 86, 43, .13); --line: #D8D4C8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1B1A17; --surface: #242320; --ink: #F0EDE4; --muted: #A8A396;
+      --accent: #E07A4F; --accent-soft: rgba(224, 122, 79, .16); --line: #3A3833;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EDEAE2; --surface: #F7F5EF; --ink: #23241F; --muted: #6E6A5E;
+    --accent: #C2562B; --accent-soft: rgba(194, 86, 43, .13); --line: #D8D4C8;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1B1A17; --surface: #242320; --ink: #F0EDE4; --muted: #A8A396;
+    --accent: #E07A4F; --accent-soft: rgba(224, 122, 79, .16); --line: #3A3833;
+  }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", system-ui, sans-serif;
+    line-height: 1.85; margin: 0; padding: 0 0 140px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+  header h1 { font-size: 20px; margin: 0 0 4px; text-wrap: balance; }
+  header .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .settings {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 24px; font-size: 13px;
+  }
+  .settings label { color: var(--muted); }
+  .settings select {
+    font-size: 13px; max-width: 100%; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  #novoice { color: var(--accent); font-size: 13px; display: none; }
+  .slide {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; margin-bottom: 14px; cursor: pointer;
+  }
+  .slide:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .slide.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .slide .meta {
+    display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px;
+    font-size: 12px; color: var(--muted); letter-spacing: .04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .slide .num { color: var(--accent); font-weight: 700; }
+  .slide h2 { font-size: 15px; margin: 0 0 8px; }
+  .slide p { margin: 0; font-size: 14px; }
+  .slide .hint { font-size: 11px; color: var(--muted); margin-top: 10px; }
+  span.sent { border-radius: 4px; cursor: pointer; }
+  span.sent:hover { background: var(--accent-soft); }
+  span.sent.speaking { background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .player {
+    position: fixed; inset: auto 0 0 0; background: var(--surface);
+    border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .player .inner {
+    max-width: 720px; margin: 0 auto; display: flex; gap: 8px; align-items: center;
+  }
+  .player button {
+    font-size: 16px; padding: 10px 0; width: 54px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+  }
+  .player button.small { width: 40px; font-size: 13px; }
+  #rateVal {
+    font-size: 13px; min-width: 44px; text-align: center;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .player button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .player button.primary { background: var(--accent); color: #FBF7F2; border-color: var(--accent); width: 72px; }
+  #status { font-size: 12px; color: var(--muted); margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 id="doctitle">台本リーダー</h1>
+    <p class="sub">ゲート2確認用 — 文をタップするとその文から、タイトルや余白をタップするとスライドの頭から再生します。読み上げはこの端末の音声(Web Speech API)を使います。</p>
+  </header>
+  <div class="settings">
+    <label for="voice">声</label> <select id="voice"></select>
+    <span id="novoice">この端末に日本語の音声が見つかりません。端末の設定で日本語音声を追加してください。</span>
+  </div>
+  <main id="slides"></main>
+</div>
+
+<div class="player">
+  <div class="inner">
+    <button id="prev" aria-label="前のスライド">⏮</button>
+    <button id="play" class="primary" aria-label="再生">▶</button>
+    <button id="next" aria-label="次のスライド">⏭</button>
+    <button id="rateDown" class="small" aria-label="読み上げを遅くする">◀</button>
+    <span id="rateVal">1.0×</span>
+    <button id="rateUp" class="small" aria-label="読み上げを速くする">▶</button>
+    <div id="status">未再生</div>
+  </div>
+</div>
+
+<script type="text/plain" id="src"># 台本 — XXX Chronicle（現場の記録アプリ）紹介（想定 20分／300字=1分換算）
+
+
+## スライド 1（表紙）[0:00-0:00.3]
+こんにちは。今日は、私が現場で使っている記録のアプリを題材にお話しします。名前は伏せて、XXX Chronicle と呼びます。製造の現場で起きるトラブルを記録して、その記録がそのまま改善につながるように作ったものです。
+
+→ スライド 2 へ切替
+
+## スライド 2（現場の仕事と、技術の仕事）[0:00.3-0:01.3]
+本題の前に、製造の現場に誰がいるかを一分だけ説明します。大きく二つです。一つは現場です。決められた通りに、ものを作り続ける人たちです。異常に最初に気づくのも現場ですし、止まったらその場で復旧するのも現場です。もう一つは技術です。つくる仕組みのほうを作る人たちです。生産ラインを立ち上げ、作り方の標準と作業手順書を作ります。良品条件、つまり、どういう状態なら合格かという決めごとも技術が決めて、品質を作り込みます。仕事は分かれていますが、真ん中は重なっています。起きたトラブルは、二人の共通の相手です。なぜ起きたのかを調べるのも、対策を決めて実行するのも、二度と繰り返さないようにするのも、どちらか片方ではできません。ところが、その重なっている部分のやりとりが、いまは紙と表計算のファイルと口頭に分かれています。ここから困りごとが始まります。
+
+→ スライド 3 へ切替
+
+## スライド 3（現場の困りごと）[0:01.3-0:02.5]
+では、何に困っていたのかをお話しします。表面的な話ではなく、根っこのところを三つ挙げます。一つ目は、対策が場当たりになることです。同じことが何回起きているかを数えられないからです。数えられないので、目についたものから手を打つことになります。一番大きい問題が後回しになっていても、気づけません。二つ目は、打った対策が効いたのかどうか分からないことです。対策の記録と、トラブルの記録が別々の場所にあるからです。前と後ろを並べて比べられないので、効いた気がする、で終わってしまいます。三つ目は、その対策が別の問題を生んでいても気づけないことです。段取りを変えた、部品を替えた、という事実がどこにも残らないので、悪くなり始めた時期と結びつけられません。三つとも、私が自分の現場で感じたことです。根っこは同じで、記録はあるのに、つながっていないのです。
+
+→ スライド 4 へ切替
+
+## スライド 4（設計のコンセプト — PDCA が回る輪）[0:02.5-0:04.5]
+困っていた三つは、記録が悪いのではなく、書く道具と、数える道具と、対策の道具が、別々だっただけです。だから、記録から効果の確認までを、一本の輪につなぎました。輪は七つの段でできています。記録する。束ねる。大きさを測る。順位をつける。原因の見当をつける。対策を動かす。効いたか確かめる。そしてまた、記録に戻ります。この形は、皆さんが知っている PDCA です。計画のPが、束ねるところから原因の見当まで。実行のDが対策、確認のCが効果、そして改善のAで、結果がまた記録に戻ります。新しいやり方ではありません。すでにある回し方を、アプリに乗せただけです。図の中に、各区画で使う画面の名前を入れてあります。記録は入力フォーム。束ねるのは問題ボード。順位は大きい順に並べた棒グラフ、パレート図です。原因の見当は、時系列に縦線を引く画面。対策は工程表。効果の確認は、対策の前と後ろの比較です。このあと実物でお見せするのは、この六つの画面です。記録は輪の一部ではなく、輪の土台です。ずっと動き続けている観測で、あとの六つは全部、その積み重ねを材料にしています。しかも、対策をやったという事実そのものが、また記録として自動でたまります。だから輪が閉じるのです。いつから悪くなったか、という見当は、問題に結びつけて残します。まず記録があり、次に問題があり、そこではじめて原因の印を置けます。この順番は入れ替えられません。
+
+→ スライド 5 へ切替
+
+## スライド 5（では、実物を）[0:04.5-0:14.0]
+では、実物をお見せします。いま現場で動いているものです。さきほどの輪の順番で、記録するところから、効果を確かめるところまで、実際の画面を通してご覧ください。
+
+→ スライド 6 へ切替
+
+## スライド 6（技術：画面の土台）[0:14.0-0:15.5]
+実物を見ていただいたので、何で作られているかをお話しします。AI と一緒にコードを書いている方の参考になればと思います。まず画面の土台です。四つあります。一つ目は React です。画面を小さな部品に分けて、それを組み立てていく道具です。TypeScript から使うライブラリで、Web アプリの画面側で最も広く使われています。ボタンや表を部品にしておけば、どの画面でも使い回せます。二つ目は TypeScript です。JavaScript に型を足した言語です。型というのは、ここには数字、ここには文字列、という決めごとです。決めておくと、書き間違いを動かす前に見つけられます。三つ目は Vite です。これは言語でもライブラリでもなく、開発しているあいだだけ動く道具です。私がコードを直して保存すると、その瞬間にブラウザの画面が書き換わります。待ち時間が短いほど試す回数が増えるので、AI と一緒に書くときは特に効きます。四つ目は TanStack Query です。取ってきたデータを覚えておく道具で、同じ問い合わせを繰り返しません[S7]。今回はこの四つで、Next.js のようなフレームワークは使っていません。画面だけを作り、サーバは別に用意する構成にしたからです。
+
+→ スライド 7 へ切替
+
+## スライド 7（技術：見た目と表現）[0:15.5-0:17.0]
+見た目と表現です。見た目は Tailwind CSS で書いています。色や余白を、用意された小さな名前の組み合わせで指定する方式です。画面の部品は shadcn/ui です。これはライブラリではありません。部品のコードを自分の側に取り込み、直しながら使う方式です[S6]。グラフは Recharts を使っています。React 用のグラフの部品で、棒グラフと折れ線と基準線を一つの図に重ねられます[S4]。パレート図という名前の機能はなく、部品を組み合わせて自分で組んでいます。工程表のほうは既製品を使わず、自作しました。バーは、素の div に Tailwind を当てただけのものです。一日を三十ピクセルと決めて、日数に掛け算して位置を出しています。つかんで動かすと、動いた距離を日数に直して描き直します。日のマス目に吸着するのは、この丸めの働きです。サーバは、離した瞬間に届いた日付を保存するだけで、期間の計算はしていません。最後に、ログイン画面の背景です。three.js と WebGL を使っています。WebGL はブラウザで 3D を描くための仕組みで、three.js はそれを扱いやすくするライブラリです。星雲を三層に重ねた絵を、開くたびにその場で描いています。画像ではありません。
+
+→ スライド 8 へ切替
+
+## スライド 8（技術：サーバとデータ）[0:17.0-0:18.5]
+三つ目はサーバとデータです。サーバ側は Node.js と Express です。Node.js はサーバで JavaScript を動かす土台、Express は、どの住所に来た要求をどの処理へ渡すかを決める枠組みで、いわゆる API の入口です。データベースは PostgreSQL です。表の形でデータを持ち、SQL という言葉で出し入れします。件数を数える、合計する、大きい順に並べる、といった集計はここです。その上に Drizzle ORM を使っています。ORM は、データベースの表とプログラムを橋渡しする道具です。SQL を直接書かなくても、TypeScript のコードのままデータを読み書きできます。Drizzle にはもう一つ特徴があって、テーブルの定義を一か所に書くと、そこからデータベースの表と、TypeScript の型が作られます[S1][S2]。使うタイミングは二つです。表と型を作るのは開発中の作業、データの読み書きと入力チェックはアプリが動いているあいだずっと働いています。入力チェックには Zod を使います。drizzle-zod なら、同じ定義から検証の決まりも作れます[S3]。人が三か所に同じことを書かずに済みます。
+
+→ スライド 9 へ切替
+
+## スライド 9（技術：置き場所と運用）[0:18.5-0:20.0]
+最後は置き場所です。一つはクラウドの Vercel です。Web アプリを置いて動かすサービスで、Express を丸ごと一つの関数として載せられます[S5]。もう一つは社内のサーバです。インターネットに出せないデータを扱うときは、同じアプリを社内に置きます。切り替えは環境変数、つまりアプリの外に置いておく設定値を差し替えるだけです。ただし、そのまま無改造で移せるわけではありません。静的ファイル、つまり画像やスタイルのように中身が変わらないファイルの配り方。それから、ファイルの書き込み先、リクエストの大きさの上限、実行時間の上限。この四つは、両方で動く書き方に揃えておく必要があります。どちらを選ぶかは、技術というより、データを外に出してよいかどうかで決まります。ここが、自分の現場でアプリを作るときの、いちばん最初の分かれ道になると思います。今日お話ししたものは、どれも AI に頼めば書いてもらえます。名前だけでも持ち帰っていただければ、次に調べる入口になります。
+</script>
+
+<script>
+(function () {
+  var raw = document.getElementById('src').textContent;
+  var lines = raw.split('\n');
+  var slides = []; var cur = null; var docTitle = '';
+  var head = /^##\s*スライド\s*(\d+)\s*(?:[（(](.*?)[）)])?\s*(?:\[(.*?)\])?/;
+  lines.forEach(function (line) {
+    if (line.indexOf('# ') === 0 && !docTitle) { docTitle = line.replace(/^#\s*/, ''); return; }
+    var m = line.match(head);
+    if (m) { cur = { num: m[1], title: m[2] || '', time: m[3] || '', text: [] }; slides.push(cur); return; }
+    if (!cur) return;
+    var t = line.trim();
+    if (!t || t.indexOf('→') === 0) return;
+    cur.text.push(t);
+  });
+  if (docTitle) document.getElementById('doctitle').textContent = docTitle;
+
+  function clean(s) { return s.replace(/\[S\d+\]/g, '').replace(/\*\*/g, ''); }
+  function sentences(s) {
+    return clean(s).split(/(?<=[。!?！？])/).map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  // 長文はブラウザ側で途中打ち切りされるため、読点等で約80字以下の発話単位に割る
+  function chunks(sen) {
+    var MAX = 80;
+    if (sen.length <= MAX) return [sen];
+    var parts = sen.split(/(?<=[、,:：;；])/);
+    var out = []; var buf = '';
+    parts.forEach(function (p) {
+      if (buf && (buf + p).length > MAX) { out.push(buf); buf = p; }
+      else buf += p;
+    });
+    if (buf) out.push(buf);
+    return out;
+  }
+
+  // 発話キュー: {slide, el, text}(el は文単位のハイライト対象。1文が複数発話に割れることがある)
+  var queue = []; var slideEls = [];
+  var main = document.getElementById('slides');
+  slides.forEach(function (s, si) {
+    var card = document.createElement('article');
+    card.className = 'slide'; card.tabIndex = 0;
+    card.innerHTML = '<div class="meta"><span class="num">S' + s.num + '</span><span>' + s.time + '</span></div>' +
+      (s.title ? '<h2>' + s.title + '</h2>' : '');
+    var p = document.createElement('p');
+    s.text.forEach(function (para) {
+      sentences(para).forEach(function (sen) {
+        var span = document.createElement('span');
+        span.className = 'sent'; span.textContent = sen;
+        p.appendChild(span);
+        chunks(sen).forEach(function (ch) {
+          queue.push({ slide: si, el: span, text: ch });
+        });
+        // 文をタップ → その文の頭から再生(カード側のハンドラには渡さない)
+        span.addEventListener('click', function (e) {
+          e.stopPropagation();
+          playFrom(firstOfEl(span));
+        });
+      });
+    });
+    card.appendChild(p);
+    var hint = document.createElement('div');
+    hint.className = 'hint'; hint.textContent = '文をタップ=その文から/ここをタップ=スライドの頭から再生';
+    card.appendChild(hint);
+    function startHere() { playFrom(firstOfSlide(si)); }
+    card.addEventListener('click', startHere);
+    card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startHere(); } });
+    slideEls.push(card);
+    main.appendChild(card);
+  });
+  function firstOfSlide(si) {
+    for (var i = 0; i < queue.length; i++) if (queue[i].slide === si) return i;
+    return 0;
+  }
+  function firstOfEl(el) {
+    for (var i = 0; i < queue.length; i++) if (queue[i].el === el) return i;
+    return 0;
+  }
+
+  var synth = window.speechSynthesis;
+  var voiceSel = document.getElementById('voice');
+  var jaVoices = [];
+  function loadVoices() {
+    jaVoices = (synth ? synth.getVoices() : []).filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf('ja') === 0; });
+    voiceSel.innerHTML = '';
+    jaVoices.forEach(function (v, i) {
+      var o = document.createElement('option');
+      o.value = i; o.textContent = v.name;
+      voiceSel.appendChild(o);
+    });
+    document.getElementById('novoice').style.display = jaVoices.length ? 'none' : 'inline';
+  }
+  loadVoices();
+  if (synth) synth.onvoiceschanged = loadVoices;
+
+  var idx = 0, playing = false, rate = 1.0;
+  // session: 再生の世代番号。cancel() の完了通知は非同期に遅れて届くため、
+  // 旧世代の onend/onerror が新しい再生の idx を進めないようこの番号で無効化する
+  var session = 0;
+  var currentUtterance = null; // iOS で GC されると onend が来なくなるため参照を保持
+  var RATE_MIN = 0.5, RATE_MAX = 2.0, RATE_STEP = 0.25;
+  var playBtn = document.getElementById('play');
+  var status = document.getElementById('status');
+  var rateVal = document.getElementById('rateVal');
+  function fmtRate() { return parseFloat(rate.toFixed(2)) + '×'; }
+
+  // 一部ブラウザは連続読み上げを一定時間で勝手に一時停止する。定期的に起こす
+  setInterval(function () {
+    if (playing && synth && synth.paused) synth.resume();
+  }, 5000);
+
+  function mark(i) {
+    document.querySelectorAll('span.sent.speaking').forEach(function (e) { e.classList.remove('speaking'); });
+    slideEls.forEach(function (e) { e.classList.remove('current'); });
+    if (i < queue.length) {
+      queue[i].el.classList.add('speaking');
+      var card = slideEls[queue[i].slide];
+      card.classList.add('current');
+      var r = queue[i].el.getBoundingClientRect();
+      if (r.top < 80 || r.bottom > window.innerHeight - 160) {
+        queue[i].el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      var s = slides[queue[i].slide];
+      status.textContent = 'S' + s.num + ' / 全' + slides.length + '枚 ・ ' + fmtRate();
+    }
+  }
+  function speakNext(mySession) {
+    if (!playing || mySession !== session) return;
+    if (idx >= queue.length) { stopAll(); status.textContent = '最後まで読み上げました'; return; }
+    mark(idx);
+    var u = new SpeechSynthesisUtterance(queue[idx].text);
+    currentUtterance = u;
+    u.lang = 'ja-JP'; u.rate = rate;
+    var v = jaVoices[parseInt(voiceSel.value || '0', 10)];
+    if (v) u.voice = v;
+    u.onend = function () {
+      if (!playing || mySession !== session) return; // 旧世代・停止後の通知は無視
+      idx++; speakNext(mySession);
+    };
+    u.onerror = function (e) {
+      if (!playing || mySession !== session) return;
+      // cancel() 由来の通知では読み進めない(1文目スキップの原因)。実エラーのみ次へ
+      if (e && (e.error === 'canceled' || e.error === 'interrupted')) return;
+      idx++; speakNext(mySession);
+    };
+    synth.speak(u);
+  }
+  function playFrom(i) {
+    if (!synth) { status.textContent = 'この環境では読み上げに対応していません'; return; }
+    session++;
+    var mySession = session;
+    synth.cancel();
+    idx = i; playing = true;
+    playBtn.textContent = '⏸'; playBtn.setAttribute('aria-label', '一時停止');
+    // cancel() 直後の speak() は無音で捨てられることがあるため、少し待ってから開始
+    setTimeout(function () { speakNext(mySession); }, 250);
+  }
+  function stopAll() {
+    playing = false;
+    session++;
+    if (synth) synth.cancel();
+    playBtn.textContent = '▶'; playBtn.setAttribute('aria-label', '再生');
+  }
+  playBtn.addEventListener('click', function () {
+    if (playing) {
+      var si = queue[idx] ? queue[idx].slide : 0;
+      stopAll();
+      status.textContent = '一時停止(S' + slides[si].num + ' の途中)';
+    } else playFrom(Math.min(idx, queue.length - 1));
+  });
+  document.getElementById('prev').addEventListener('click', function () {
+    var si = queue[idx] ? queue[idx].slide : 0;
+    playFrom(firstOfSlide(Math.max(0, si - 1)));
+  });
+  document.getElementById('next').addEventListener('click', function () {
+    var si = queue[idx] ? queue[idx].slide : 0;
+    playFrom(firstOfSlide(Math.min(slides.length - 1, si + 1)));
+  });
+  function setRate(next) {
+    rate = Math.min(RATE_MAX, Math.max(RATE_MIN, Math.round(next * 100) / 100));
+    rateVal.textContent = fmtRate();
+    // 再生中は現在の発話を新しい速度で作り直して即反映する
+    if (playing) playFrom(idx); else if (queue[idx]) mark(idx);
+  }
+  document.getElementById('rateDown').addEventListener('click', function () { setRate(rate - RATE_STEP); });
+  document.getElementById('rateUp').addEventListener('click', function () { setRate(rate + RATE_STEP); });
+})();
+</script>
+
+</html>
