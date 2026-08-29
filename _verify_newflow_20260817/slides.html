@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>スライド — Claude Code「技術の地図を持ち帰る」導入セミナー(65分・32ページ)</title>
+<style>
+
+/* ===== tokens.css を内包(外部参照0件。単一の真実は slide_designsystem/tokens.css) ===== */
+/* ============================================================
+   スライド デザイントークン v0.1
+   - すべて 6桁hex(rgba / hsl / 8桁hex 禁止)
+   - グラデーション禁止・アニメーション禁止
+   - テーマは <body data-theme="..."> で切り替える
+   ============================================================ */
+
+/* ---------- 共通パレット(Anthropic公式ブランドカラー) ---------- */
+:root {
+  --palette-dark:       #141413;
+  --palette-light:      #faf9f5;
+  --palette-mid-gray:   #b0aea5;
+  --palette-light-gray: #e8e6dc;
+  --palette-orange:     #d97757;  /* Accent 主 */
+  --palette-blue:       #6a9bcc;  /* Accent 副 */
+  --palette-green:      #788c5d;  /* Accent 第三 */
+
+  /* ---------- タイポグラフィ ---------- */
+  /* 和文優先: Noto Sans JP を第一指定(2026-07-13 ユーザー決定・変換実測用)。
+     PPTXでは先頭ファミリ名が latin/ea 両方の typeface になる(§2.4 実測) */
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+
+  /* html2pptx が注入する正規化CSSの変数を上書き(2026-07-13 実測):
+     注入CSSは p/ul/ol/li と h1-h6 に要素セレクタで Arial を直指定するため、
+     この2変数の上書き+下の p,li ルールの両方で Noto Sans JP を強制する */
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  /* サイズ段階(px × 0.75 = pt)。階層: タイトル > キーメッセージ > ボディ(2026-07-13) */
+  --fs-cover-title: 64px;   /* 48pt */
+  --fs-cover-sub:   30px;   /* 22.5pt */
+  --fs-heading:     48px;   /* 36pt */
+  --fs-subheading:  30px;   /* 22.5pt */
+  --fs-keymsg:      34px;   /* 25.5pt キーメッセージ(タイトル直下) */
+  --fs-body:        24px;   /* 18pt */
+  --fs-body-sm:     22px;   /* 16.5pt 詰め込み系ボディ(カード・表・コード等) */
+  --fs-caption:     18px;   /* 13.5pt */
+  --fs-footnote:    14px;   /* 10.5pt ページ番号(下端マージン検査対象外) */
+  --fs-section-no:  104px;  /* 78pt 章番号 */
+  --fs-watermark:   200px;  /* 150pt 表紙ウォーターマーク(読ませない装飾。cover--wm 専用) */
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  /* ---------- スペーシング段階(任意値の混在禁止) ---------- */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 48px;
+  --sp-6: 64px;
+
+  /* キャンバス: 1280×720固定・セーフマージン48px以上 */
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --slide-pad: 64px;
+
+  --radius-card: 12px;
+  --border-w: 2px;
+}
+
+/* ===== 案B: claude-gray(落ち着いた灰紙)= 既定 ===== */
+body,
+body[data-theme="claude-gray"] {
+  --bg:             #e8e6dc;
+  --text:           #141413;
+  --text-secondary: #63615a;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #faf9f5;
+  --card-border:    #d5d3c8;
+  --code-bg:        #141413;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #dedbd0;
+  --line:           #d5d3c8;
+  --muted-bg:       #dedbd0;
+  --shadow-color:   #d5d3c8;
+  --venn-a:         #6a9bcc73;
+  --venn-b:         #788c5d73;
+  /* 適性ヒート表(heat)の淡色塗り(2026-07-13 図解16型全採用で追加) */
+  --heat-good:      #dfe6d2;
+  --heat-ok:        #dbe4ee;
+  --heat-part:      #f2ddd0;
+  --heat-no:        #dedbd0;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #b9573a;
+  --accent-strong:  #b9573a;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #f2ddd0;
+  --tint-blue:      #dbe4ee;
+  --tint-green:     #dfe6d2;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案C: claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+  --venn-a:         #6a9bcc8c;
+  --venn-b:         #788c5d8c;
+  --heat-good:      #2b3325;
+  --heat-ok:        #24303d;
+  --heat-part:      #3d2a22;
+  --heat-no:        #1d1d1b;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #d97757;
+  --accent-strong:  #e5977c;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #3d2a22;
+  --tint-blue:      #24303d;
+  --tint-green:     #2b3325;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案D: ink-citrus(エディトリアル。インクの輪郭+柑橘) ===== */
+body[data-theme="ink-citrus"] {
+  --bg:             #fbfbf7;
+  --text:           #20222c;
+  --text-secondary: #5f6370;
+  --accent:         #e8590c;
+  --accent-2:       #2b6cb0;
+  --accent-3:       #37803b;
+  --card-bg:        #fdfdfa;
+  --card-border:    #20222c;
+  --code-bg:        #20222c;
+  --code-text:      #f4f4ef;
+  --table-head-bg:  #edede4;
+  --line:           #c9cad1;
+  --muted-bg:       #f0f0ea;
+  --shadow-color:   #20222c;
+  --venn-a:         #2b6cb066;
+  --venn-b:         #37803b66;
+  --heat-good:      #e4eddb;
+  --heat-ok:        #dde8f3;
+  --heat-part:      #f8e3d3;
+  --heat-no:        #f0f0ea;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #e8590c;
+  --accent-strong:  #e8590c;
+  --accent-on:      #fdfdfa;
+  --tint-orange:    #f8e3d3;
+  --tint-blue:      #dde8f3;
+  --tint-green:     #e4eddb;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #20222c;
+  --wm-ink:         #2f323e;
+  --wm-text:        #fbfbf7;
+  --wm-sub:         #a8abb6;
+  --wm-line:        #3a3d4a;
+  --wm-accent:      #f4772e;
+}
+/* ===== 案F: cyber-terminal(端末風ダーク。緑+青+琥珀) ===== */
+body[data-theme="cyber-terminal"] {
+  --bg:             #0d1117;
+  --text:           #e6edf3;
+  --text-secondary: #8b949e;
+  --accent:         #3fb950;
+  --accent-2:       #58a6ff;
+  --accent-3:       #d29922;
+  --card-bg:        #161b22;
+  --card-border:    #30363d;
+  --code-bg:        #010409;
+  --code-text:      #e6edf3;
+  --table-head-bg:  #161b22;
+  --line:           #30363d;
+  --muted-bg:       #11151c;
+  --shadow-color:   #010409;
+  --venn-a:         #58a6ff59;
+  --venn-b:         #3fb95059;
+  --heat-good:      #12261a;
+  --heat-ok:        #132639;
+  --heat-part:      #2e2413;
+  --heat-no:        #11151c;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #3fb950;
+  --accent-strong:  #3fb950;
+  --accent-on:      #010409;
+  --tint-orange:    #2e2413;
+  --tint-blue:      #132639;
+  --tint-green:     #12261a;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #010409;
+  --wm-ink:         #12181f;
+  --wm-text:        #e6edf3;
+  --wm-sub:         #8b949e;
+  --wm-line:        #30363d;
+  --wm-accent:      #3fb950;
+}
+/* ===== 案H: blueprint(製図・図面風。鋼青×製図ブルー) =====
+   swiss-red は 2026-07-13 ユーザー破棄のため削除し、現行候補5テーマに同期 */
+body[data-theme="blueprint"] {
+  --bg:             #f2f5f7;
+  --text:           #24344d;
+  --text-secondary: #5d6b7e;
+  --accent:         #1e6bb8;
+  --accent-2:       #e8590c;
+  --accent-3:       #37b24c;
+  --card-bg:        #fbfcfd;
+  --card-border:    #c9d4de;
+  --code-bg:        #24344d;
+  --code-text:      #f2f5f7;
+  --table-head-bg:  #e3eaf0;
+  --line:           #c9d4de;
+  --muted-bg:       #e8eef3;
+  --shadow-color:   #c9d4de;
+  --venn-a:         #1e6bb866;
+  --venn-b:         #37b24c59;
+  --heat-good:      #ddf0e0;
+  --heat-ok:        #dbe9f6;
+  --heat-part:      #fae3d4;
+  --heat-no:        #e8eef3;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #1e6bb8;
+  --accent-strong:  #1e6bb8;
+  --accent-on:      #fbfcfd;
+  --tint-orange:    #fae3d4;
+  --tint-blue:      #dbe9f6;
+  --tint-green:     #ddf0e0;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #24344d;
+  --wm-ink:         #31445f;
+  --wm-text:        #f2f5f7;
+  --wm-sub:         #aebbca;
+  --wm-line:        #3d5273;
+  --wm-accent:      #6ab0ea;
+}
+
+/* ===== 骨格の基礎スタイル ===== */
+
+  /* デザインシステム共通のリセット(slide-samples / run-04 と同一)。
+     これが無いと padding が加算され 1280x720 にならない */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+  .page {
+    width: 1280px; height: 720px; background: var(--bg); color: var(--text);
+    overflow: hidden; position: relative;
+    padding: 48px var(--slide-pad) var(--slide-pad); margin: 0 auto 24px auto;
+  }
+  @media print { @page { size: 1280px 720px; margin: 0; } body { background: none; }
+    .page { margin: 0; page-break-after: always; } }
+
+  /* 中面(3部構成のうちタイトルとキーメッセージのみ確定。ボディは空欄) */
+  .slide-heading { font-family: var(--font-heading); font-size: var(--fs-heading);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 10px; }
+  .key-message { font-family: var(--font-heading); font-size: var(--fs-keymsg);
+    font-weight: 500; line-height: 1.35; color: var(--text-secondary);
+    margin: 0 0 12px; max-width: 1020px; }
+  .header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+  .page-number { position: absolute; right: 48px; bottom: 24px;
+    font-family: var(--font-heading); font-size: var(--fs-footnote); color: var(--text-secondary); }
+
+  /* 表紙(既定) */
+  .page--cover { display: flex; flex-direction: column; justify-content: center;
+    align-items: center; text-align: center; }
+  .cover-kicker { font-family: var(--font-heading); font-size: var(--fs-caption);
+    font-weight: 700; letter-spacing: 6px; color: var(--accent); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-title { font-family: var(--font-heading); font-size: var(--fs-cover-title);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-subtitle { font-size: var(--fs-cover-sub); color: var(--text-secondary);
+    margin: 0 0 var(--sp-5); line-height: 1.4; }
+  .page--cover .cover-meta { font-size: var(--fs-body); color: var(--text-secondary); margin: 0; }
+  .cover-wm { display: none; }
+
+  /* 表紙バリアント: ウォーターマーク(cover--wm)。原本 slide_designsystem/samples より写す */
+  body .page--cover.cover--wm {
+    background: var(--wm-bg); color: var(--wm-text);
+    align-items: flex-start; text-align: left;
+    justify-content: flex-end;
+    padding: 48px var(--slide-pad) var(--sp-6);
+  }
+  body .page--cover.cover--wm .cover-wm {
+    display: block; position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-56%);
+    font-family: var(--font-heading); font-size: var(--fs-watermark); font-weight: 900;
+    line-height: 1; letter-spacing: -0.02em; text-align: center; white-space: nowrap;
+    color: var(--wm-ink);
+  }
+  body .page--cover.cover--wm .cover-kicker {
+    position: absolute; top: 56px; left: var(--slide-pad); margin: 0; color: var(--wm-accent);
+  }
+  body .page--cover.cover--wm .slide-title {
+    position: relative; font-size: var(--fs-cover-title); color: var(--wm-text);
+    margin-bottom: var(--sp-3);
+  }
+  body .page--cover.cover--wm .slide-subtitle {
+    position: relative; font-size: var(--fs-caption); line-height: 1.9;
+    color: var(--wm-sub); margin-bottom: 0;
+  }
+  body .page--cover.cover--wm .cover-rule {
+    display: block; width: 100%; border-top: 1px solid var(--wm-line);
+    margin: var(--sp-5) 0 var(--sp-3);
+  }
+  body .page--cover.cover--wm .cover-meta {
+    position: relative; display: flex; width: 100%; justify-content: space-between;
+    align-items: baseline; font-size: var(--fs-caption); font-weight: 700; color: var(--wm-text);
+  }
+  body .page--cover.cover--wm .cover-date { font-weight: 400; letter-spacing: 2px; color: var(--wm-sub); }
+  body .page--cover.cover--wm .page-number { color: var(--wm-sub); }
+
+/* ===== ボディ構成部品(slide_designsystem/samples の型から写す。新しい見た目は作らない) ===== */
+.body-lead { font-size: var(--fs-body); line-height: var(--lh-body); margin-bottom: var(--sp-3); max-width: 1000px; }
+.body-cap { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-3); max-width: 1050px; }
+/* ---------- まとめ(summary) ---------- */
+.summary-item { display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--line); }
+.summary-item .summary-no { font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 56px;
+  line-height: 1.2; }
+.summary-item .summary-no--2 { color: var(--accent-2); }
+.summary-item .summary-no--3 { color: var(--accent-3); }
+.summary-item .summary-text { font-size: var(--fs-body); line-height: var(--lh-body); max-width: 940px; }
+/* ---------- アジェンダ(縦リスト) ---------- */
+.agenda-item { display: flex; align-items: flex-start; gap: var(--sp-3); padding: 14px 0; border-bottom: 1px solid var(--line); }
+.agenda-no { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; min-width: 120px; line-height: 1.25; }
+.agenda-no--1 { color: var(--accent); }
+.agenda-no--2 { color: var(--accent-2); }
+.agenda-no--3 { color: var(--accent-3); }
+.agenda-no--4 { color: var(--layer-loop); }
+.agenda-no--5 { color: var(--accent); }
+.agenda-text { font-size: var(--fs-body); line-height: 1.35; padding-top: 4px; max-width: 900px; }
+/* ---------- 箇条書き ---------- */
+.bullet-list { list-style-position: outside; padding-left: 28px; }
+.bullet-list li { font-size: var(--fs-body-sm); line-height: var(--lh-body); margin-bottom: var(--sp-1); }
+.bullet-list li b { font-weight: 700; }
+/* ---------- カード(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.card--tight { padding: var(--sp-3); }
+.card .card-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent); margin-bottom: var(--sp-1); }
+.card .card-no--2 { color: var(--accent-2); }
+.card .card-no--3 { color: var(--accent-3); }
+.card .card-title { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--text); margin-bottom: var(--sp-2); }
+.card .card-title--sm { font-size: var(--fs-body); }
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+/* ---------- 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-4); }
+.compare-col .compare-label { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; margin-bottom: var(--sp-3); }
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after { border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+/* ---------- フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step { flex: 1; background: var(--card-bg); border: var(--border-w) solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-2); text-align: center; }
+.flow-step .flow-step-no { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--accent); margin-bottom: var(--sp-1); }
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); line-height: 1.4; }
+.flow-arrow { font-size: var(--fs-subheading); color: var(--accent); font-family: var(--font-heading); font-weight: 700; }
+/* ---------- ロジックツリー(tree) ---------- */
+.tree-canvas { position: relative; height: 380px; }
+.tree-node { position: absolute; background: var(--card-bg); border: var(--border-w) solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-2) var(--sp-3); }
+.tree-node p { font-size: var(--fs-body-sm); font-weight: 700; }
+.tree-node p.tree-sub { font-size: var(--fs-caption); color: var(--text-secondary); font-weight: 400; margin-top: 4px; line-height: 1.45; }
+.tree-node--root { border-color: var(--accent); border-width: 3px; }
+.tree-line { position: absolute; }
+.tree-line--h { border-top: 2px solid var(--text-secondary); }
+.tree-line--v { border-left: 2px solid var(--text-secondary); }
+/* ---------- 入れ子(layers・同心) ---------- */
+.nest-canvas { position: relative; height: 380px; }
+.nest-box { position: absolute; border-radius: var(--radius-card); }
+.nest-box p { font-family: var(--font-heading); font-weight: 700; padding: 10px 18px; }
+.nest-box p.nest-sub { font-weight: 400; font-size: var(--fs-caption); color: var(--text-secondary); padding: 0 18px 8px; }
+.nest-outer { border: 3px solid var(--layer-harness); background: var(--muted-bg); }
+.nest-mid { border: 3px solid var(--layer-context); background: var(--card-bg); }
+.nest-inner { border: 3px solid var(--layer-prompt); background: var(--muted-bg); text-align: center; }
+.nest-outer > p:first-child { color: var(--layer-harness); font-size: var(--fs-body-sm); }
+.nest-mid   > p:first-child { color: var(--layer-context); font-size: var(--fs-body-sm); }
+.nest-inner > p:first-child { color: var(--layer-prompt); font-size: var(--fs-body-sm); }
+/* PDCA(ループ)パネル */
+.pdca-panel { position: absolute; border: 3px solid var(--layer-loop); border-radius: var(--radius-card); background: var(--muted-bg); padding: var(--sp-3) var(--sp-3) var(--sp-2); }
+.pdca-head { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: var(--layer-loop); margin-bottom: 6px; }
+.pdca-item { background: var(--card-bg); border: 2px solid var(--layer-loop); border-radius: 8px; padding: 5px 16px; }
+.pdca-item p { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; line-height: 1.2; }
+.pdca-arw { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin: 1px 0; line-height: 1; }
+.pdca-back { text-align: center; font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; color: var(--layer-loop); margin-top: 4px; }
+/* ---------- 強調バンド(演習) ---------- */
+.emph-band { background: var(--card-bg); border: 3px solid var(--accent); border-radius: var(--radius-card); padding: var(--sp-3) var(--sp-4); text-align: center; }
+.emph-band p { font-family: var(--font-heading); font-size: var(--fs-subheading); font-weight: 700; color: var(--accent); }
+/* S6: 図名(図の見出し) */
+.fig-title { position: absolute; font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+.page--hcards .body-cap { margin-top: 4px; }
+/* ① CLAUDE.md / skills の説明カード */
+.page--hcards .card--tight { padding: 16px 20px; }
+.page--hcards .card--tight .card-title { margin-bottom: 6px; }
+.diagram-note { position: absolute; left: 64px; bottom: 24px; font-family: var(--font-heading); font-size: var(--fs-footnote); color: var(--text-secondary); }
+.io-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.io-box { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: var(--sp-3); width: 290px; text-align: center; }
+.io-box--model { width: 400px; border: 2px solid var(--accent); background: var(--tint-orange); padding: var(--sp-4) var(--sp-3); }
+.io-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent-2); margin-bottom: var(--sp-1); }
+.io-box--model .io-label { color: var(--accent-heading); }
+.io-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: var(--sp-1); }
+.io-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.io-box--model .io-sub { color: var(--text); }
+.io-arrow { font-size: var(--fs-keymsg); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.io-caption { margin-top: var(--sp-4); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+.ly-stack { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-1); }
+.ly-band { display: flex; align-items: stretch; border: 2px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); overflow: hidden; }
+.ly-chip { width: 230px; display: flex; align-items: center; justify-content: center; }
+.ly-chip p { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: #faf9f5; }
+.ly-chip--1 { background: var(--accent); }
+.ly-chip--2 { background: var(--accent-2); }
+.ly-chip--3 { background: var(--accent-3); }
+.ly-body { padding: 20px 28px; }
+.ly-title { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.ly-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.an-rows { display: flex; flex-direction: column; gap: 14px; margin-top: var(--sp-1); }
+.an-row { display: flex; align-items: stretch; gap: var(--sp-2); }
+.an-pill { width: 132px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+.an-pill p { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; color: #faf9f5; }
+.an-pill--role { background: var(--cat-1); }
+.an-pill--ctx { background: var(--cat-2); }
+.an-pill--inst { background: var(--cat-3); }
+.an-pill--format { background: var(--cat-4); }
+.an-text { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); display: flex; align-items: center; padding: 12px 22px; }
+.an-text p { font-family: var(--font-mono); font-size: var(--fs-body-sm); }
+.an-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); }
+.at-item-no p, .cy-center p { margin: 0; font-family: inherit; font-size: inherit; font-weight: inherit; color: inherit; line-height: inherit; }
+.cy-canvas { position: relative; height: 430px; }
+.cy-card { position: absolute; width: 380px; height: 140px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 18px 24px; }
+.cy-step { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 4px; }
+.cy-step--1 { color: var(--cat-1); }
+.cy-step--2 { color: var(--cat-2); }
+.cy-step--3 { color: var(--cat-3); }
+.cy-step--4 { color: var(--cat-4); }
+.cy-title { font-family: var(--font-heading); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.cy-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.cy-arrow { position: absolute; font-size: var(--fs-keymsg); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.cy-center { position: absolute; font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--accent-heading); text-align: center; background: var(--tint-orange); border: 2px solid var(--accent); border-radius: var(--radius-card); padding: 12px 16px; }
+.ht-row { display: flex; border-bottom: 1px solid var(--line); }
+.ht-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.ht-cell { padding: 14px 18px; display: flex; align-items: center; justify-content: center; }
+.ht-cell p { font-size: var(--fs-body-sm); line-height: 1.4; }
+.ht-row--head .ht-cell p { font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-caption); }
+.ht-cell--task { width: 280px; justify-content: flex-start; }
+.ht-cell--task p { font-weight: 700; font-size: var(--fs-caption); }
+.ht-cell--v { width: 218px; }
+.ht-cell--v p { font-family: var(--font-heading); font-weight: 700; font-size: 22px; }
+.ht-good { background: var(--heat-good); }
+.ht-good p { color: var(--accent-3); }
+.ht-ok { background: var(--heat-ok); }
+.ht-ok p { color: var(--accent-2); }
+.ht-part { background: var(--heat-part); }
+.ht-part p { color: var(--accent); }
+.ht-no { background: var(--heat-no); }
+.ht-no p { color: var(--text-secondary); }
+.ht-legend { margin-top: var(--sp-2); font-size: var(--fs-caption); color: var(--text-secondary); }
+.st-row { display: flex; gap: var(--sp-3); margin-top: var(--sp-2); }
+.st-tile { flex: 1; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 30px 24px; text-align: center; }
+.st-number { font-family: var(--font-heading); font-size: 80px; font-weight: 700; line-height: 1.1; margin-bottom: 8px; }
+.st-number--1 { color: var(--accent-heading); }
+.st-number--2 { color: var(--text); }
+.st-number--3 { color: var(--text); }
+.st-label { font-family: var(--font-heading); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.st-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.st-caption { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; }
+.card--shadow { box-shadow: 4px 4px 0px var(--shadow-color); }
+.card--hl-1 { background: var(--tint-orange); border-color: var(--accent); }
+.card--hl-2 { background: var(--tint-blue); border-color: var(--accent-2); }
+.card--hl-3 { background: var(--tint-green); border-color: var(--accent-3); }
+.card--key { background: var(--tint-orange); border-color: var(--accent); }
+.code-block { background: var(--code-bg); border-radius: var(--radius-card); padding: var(--sp-4); }
+.code-block p { color: var(--code-text); font-family: var(--font-mono); font-size: var(--fs-body-sm); line-height: 1.7; }
+.code-block .tok-comment { color: #b0aea5; }
+.code-block .tok-keyword { color: #6a9bcc; }
+.code-block .tok-string { color: #d97757; }
+.code-caption { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-2); }
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--c1 { width: 240px; }
+.dtable-cell--c2 { width: 440px; }
+.dtable-cell--c3 { width: 440px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+
+  /* ---- この回の局所調整(デザインシステムのトークンのみ使用) ---- */
+  /* 四つの技術の層色。tokens.css に --layer-* は無いため、既存の4カテゴリ色へ割り当てる */
+  body { --layer-prompt: var(--accent); --layer-context: var(--accent-2);
+         --layer-harness: var(--accent-3); --layer-loop: var(--cat-4); }
+  .code-block p { white-space: pre-wrap; }
+  .code-block--sm p { font-size: var(--fs-caption); line-height: 1.7; }
+  .ly-chip { width: 210px; }
+  .ly-chip--4 { background: var(--cat-4); }
+  .page--ctx .ly-stack { gap: 12px; }
+  .page--ctx .ly-body { padding: 10px 26px; }
+  .page--recap .dtable-cell { padding: 8px var(--sp-3); }
+  .dtable-row:last-child { border-bottom: 1px solid var(--line); }
+  .an-pill p { font-size: var(--fs-caption); }
+  .page--sdd .st-tile { padding: 20px 24px; }
+  .page--fs .code-block { padding: var(--sp-3); }
+
+</style>
+</head>
+
+<body data-theme="claude-gray">
+<!-- P1: 表紙(ウォーターマーク型・英字=AGENT) -->
+<div class="page page--cover cover--wm" data-goal="-" data-minutes="0.5">
+  <div class="cover-wm">AGENT</div>
+  <p class="cover-kicker">CLAUDE CODE 技術入門</p>
+  <h1 class="slide-title">どこに何があるか、から始める</h1>
+  <p class="slide-subtitle">Claude Code の技術キーワードと仕組みを知って、自分の環境を仕込む</p>
+  <div class="cover-rule"></div>
+  <p class="cover-meta"><span>発表者: 高瀬</span><span class="cover-date">2026.08</span></p>
+  <p class="page-number">01 / 32</p>
+</div>
+
+<!-- P2: コードを書かずに作った、二つの実物 -->
+<div class="page" data-goal="G1" data-minutes="1.5">
+  <h2 class="slide-heading">コードを書かずに作った、二つの実物</h2>
+  <p class="key-message">一行も書かず、日本語で頼んだだけ</p>
+  <div class="header-rule"></div>
+    <div class="card-row">
+    <div class="card card--tight">
+      <p class="card-no ">実物 1</p>
+      <p class="card-title card-title--sm">音声入力ツール</p>
+      <p class="card-text">しゃべった言葉を文字にする。音声は外に出さず、<br>手元のパソコンの中だけで処理が終わる。</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">実物 2</p>
+      <p class="card-title card-title--sm">イベントログ＋タスク管理</p>
+      <p class="card-text">現場の出来事を記録し、<br>いま抱えている問題と着手順を出す。<br>実務で試している最中。</p>
+    </div>
+    </div>
+    <div class="card card--key" style="margin-top: var(--sp-3);">
+      <p class="card-title card-title--sm">けれど、作る間ずっと同じことを打ち込んでいた</p>
+      <p class="card-text">回答は日本語で。表はこの形式で。作業用のフォルダは触らないで。一日に何度もだった。今日は、<br>繰り返しをやめる方法を扱う。</p>
+    </div>
+  <p class="page-number">02 / 32</p>
+</div>
+
+<!-- P3: 今日の到達点 -->
+<div class="page" data-goal="-" data-minutes="1.0">
+  <h2 class="slide-heading">今日の到達点</h2>
+  <p class="key-message">今日の到達点は、どこに何があるか分かること</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">STEP 1</p>
+        <p class="flow-step-text">動作</p>
+        <p class="flow-step-sub">AI が何をしているか</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">STEP 2</p>
+        <p class="flow-step-text">四つの技術</p>
+        <p class="flow-step-sub">動作のどこを人が設計するか</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">STEP 3</p>
+        <p class="flow-step-text">仕込み先</p>
+        <p class="flow-step-sub">設計をどこに置くか</p>
+      </div>
+    </div>
+    <p class="body-cap">用語は平易な言い換えとセットで、初めて出るときに一度だけ説明する。用語だけだと現場で説明できず、<br>日本語だけだと後で調べられないため。最後の24分は手を動かし、自分の環境に最初の一行を仕込む。</p>
+  <p class="page-number">03 / 32</p>
+</div>
+
+<!-- P4: 基本動作と、止まる場所 -->
+<div class="page" data-goal="G1" data-minutes="1.5">
+  <h2 class="slide-heading">基本動作と、止まる場所</h2>
+  <p class="key-message">頼む→計画→実行→差分を見て承認</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">①</p>
+        <p class="flow-step-text">頼む</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">②</p>
+        <p class="flow-step-text">計画</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">③</p>
+        <p class="flow-step-text">実行</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">④</p>
+        <p class="flow-step-text">差分を見て承認</p>
+      </div>
+    </div>
+    <div class="card-row" style="margin-top: var(--sp-2);">
+    <div class="card card--tight">
+      <p class="card-no ">権限モード</p>
+      <p class="card-title card-title--sm">Manual</p>
+      <p class="card-text">編集や実行の前に止まり、<br>確認を求める</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">権限モード</p>
+      <p class="card-title card-title--sm">acceptEdits</p>
+      <p class="card-text">作業フォルダ内なら、<br>編集を止めずに進む。<br>差分は後でまとめて見る</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--3">権限モード</p>
+      <p class="card-title card-title--sm">Plan</p>
+      <p class="card-text">変更を一切せず、<br>調べて計画を書いて止まる</p>
+    </div>
+    </div>
+    <p class="body-cap">つまり、止まる場所は設定で選べる。最初は Manual を勧める。聞かれる面倒が、何が起きているかを知る勉強になるため。<br>自社の既定モードは登壇者が確認して伝える。</p>
+  <p class="page-number">04 / 32</p>
+</div>
+
+<!-- P5: 差分を見る -->
+<div class="page" data-goal="G1" data-minutes="1.5">
+  <h2 class="slide-heading">差分を見る</h2>
+  <p class="key-message">差分は、新旧と狙いの二つの見比べ</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">機械が出せる差分</p>
+      <ul class="bullet-list">
+        <li>変更<b>前後</b>の見比べ</li>
+        <li>消えた行と増えた行が赤と緑で出る</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">機械が出せない差分</p>
+      <ul class="bullet-list">
+        <li>やってほしかったことと、<br>出てきたもののギャップ</li>
+        <li>人が見るしかない部分</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">つまり、見る場所を先に二つだけ決めておく。① 触ってほしくないものに触っていないか ② 頼んだとおりの形になっているか。<br>決めていないと毎回全部を読むことになり、そのうち読まなくなる。違っていたら承認せず、違う一か所だけを言い直す。</p>
+  <p class="page-number">05 / 32</p>
+</div>
+
+<!-- P6: エージェントループ -->
+<div class="page" data-goal="G1" data-minutes="1.5">
+  <h2 class="slide-heading">エージェントループ</h2>
+  <p class="key-message">集める→動く→確かめるを繰り返す</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">GATHER</p>
+        <p class="flow-step-text">集める</p>
+        <p class="flow-step-sub">ファイルを探して読む</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">ACT</p>
+        <p class="flow-step-text">動く</p>
+        <p class="flow-step-sub">書き換える・テストを走らせる</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">VERIFY</p>
+        <p class="flow-step-text">確かめる</p>
+        <p class="flow-step-sub">結果を検証して次を決める</p>
+      </div>
+    </div>
+    <div class="card card--key" style="margin-top: var(--sp-3);">
+      <p class="card-title card-title--sm">↺ 一周ごとに、前の結果を見て次を決める</p>
+      <p class="card-text">頼んでから結果が出るまでにツールを何十回も呼ぶ。だから途中でずれると、ずれたまま進む。<br>確かめるところまで含めて一周になる。</p>
+    </div>
+    <p class="body-cap">つまり、人が入る理由は基準にある。AI は自分の出力を確認できるが、確認の基準は渡されたものの中にしかない。<br>自社でやってはいけないこと、という基準は、渡さない限り存在しない。</p>
+  <p class="page-number">06 / 32</p>
+</div>
+
+<!-- P7: つまり — 人が見る場所を決める -->
+<div class="page" data-goal="G1" data-minutes="0.5">
+  <h2 class="slide-heading">つまり — 人が見る場所を決める</h2>
+  <p class="key-message">人が見る場所は、自分で決められる</p>
+  <div class="header-rule"></div>
+    <div class="st-row">
+      <div class="st-tile">
+        <p class="st-number st-number--1">01</p>
+        <p class="st-label">その場で切り替える</p>
+        <p class="st-sub">権限モードを切り替える</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--2">02</p>
+        <p class="st-label">設定に常設する</p>
+        <p class="st-sub">settings.json の権限で宣言する</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--3">03</p>
+        <p class="st-label">機械的に止める</p>
+        <p class="st-sub">hooks で例外なく止める</p>
+      </div>
+    </div>
+    <p class="st-caption">手軽なものほどその場限り、強いものほど常設。今日は手軽なほうから順に見ていく。</p>
+  <p class="page-number">07 / 32</p>
+</div>
+
+<!-- P8: 四つの技術 -->
+<div class="page" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">四つの技術</h2>
+  <p class="key-message">頼み方・渡す情報・常設の仕掛け・回し方</p>
+  <div class="header-rule"></div>
+    <div class="nest-canvas" style="height: 312px;">
+      <p class="fig-title" style="left: 0px; top: 0px;">図1｜四つの技術は入れ子になっている</p>
+      <p class="fig-title" style="left: 660px; top: 0px;">図2｜四つを回すのがループ</p>
+      <div class="nest-box nest-outer" style="left: 0px; top: 32px; width: 560px; height: 232px;">
+        <p>ハーネス｜常設の仕掛け</p>
+      </div>
+      <div class="nest-box nest-mid" style="left: 70px; top: 88px; width: 420px; height: 150px;">
+        <p>コンテキスト｜渡す情報</p>
+      </div>
+      <div class="nest-box nest-inner" style="left: 150px; top: 142px; width: 260px; height: 78px;">
+        <p>プロンプト｜頼み方</p>
+      </div>
+      <p class="fig-title" style="left: 0px; top: 276px; width: 560px; color: var(--text-secondary);">外側にあるものほど、毎回きいてくる</p>
+      <div class="pdca-panel" style="left: 660px; top: 32px; width: 470px;">
+        <p class="pdca-head">ループ｜回し方</p>
+        <div class="pdca-item"><p>先に決める</p></div>
+        <p class="pdca-arw">↓</p>
+        <div class="pdca-item"><p>頼む</p></div>
+        <p class="pdca-arw">↓</p>
+        <div class="pdca-item"><p>差分を見る</p></div>
+        <p class="pdca-arw">↓</p>
+        <div class="pdca-item"><p>直して寄せる</p></div>
+        <p class="pdca-back">↩ 何度も回して狙いに寄せる</p>
+      </div>
+    </div>
+    <p class="body-cap">つまり、毎回言っていることは外側へ移していく。四つは「〜エンジニアリング」と呼ばれることもあるが、<br>この分野で使われている呼び方であり、公式が四分類を定義しているわけではない。</p>
+  <p class="page-number">08 / 32</p>
+</div>
+
+<!-- P9: 四段階のどこを設計するか -->
+<div class="page" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">四段階のどこを設計するか</h2>
+  <p class="key-message">四つの技術は、四段階のどこを設計するかの話</p>
+  <div class="header-rule"></div>
+    <div class="dtable">
+      <div class="dtable-row dtable-row--head">
+        <div class="dtable-cell" style="width:260px;"><p>動作の四段階</p></div>
+        <div class="dtable-cell" style="width:360px;"><p>設計する技術（人間側）</p></div>
+        <div class="dtable-cell" style="width:532px;"><p>具体で言うと</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:260px;"><p>① 頼む</p></div>
+        <div class="dtable-cell" style="width:360px;"><p>プロンプト｜頼み方</p></div>
+        <div class="dtable-cell" style="width:532px;"><p>依頼文の書き方そのもの</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:260px;"><p>② 計画・③ 実行</p></div>
+        <div class="dtable-cell" style="width:360px;"><p>コンテキスト｜渡す情報</p></div>
+        <div class="dtable-cell" style="width:532px;"><p>AI が読めるファイルと決まりごと</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:260px;"><p>①〜④ の土台</p></div>
+        <div class="dtable-cell" style="width:360px;"><p>ハーネス｜常設の仕掛け</p></div>
+        <div class="dtable-cell" style="width:532px;"><p>毎回打たずに済むよう環境へ置く</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:260px;"><p>④ 確認 → もう一周</p></div>
+        <div class="dtable-cell" style="width:360px;"><p>ループ｜回し方</p></div>
+        <div class="dtable-cell" style="width:532px;"><p>違えば言い直して、もう一周</p></div>
+      </div>
+    </div>
+    <p class="body-cap">つまり、四段階は AI が何をしているか、四つの技術は、そのどこを人が設計するか。迷子になったら、四段階は AI 側、<br>四つは人間側と思い出す。</p>
+  <p class="page-number">09 / 32</p>
+</div>
+
+<!-- P10: 依頼文の構造 -->
+<div class="page" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">依頼文の構造</h2>
+  <p class="key-message">依頼文は役割・背景・例・形の四点</p>
+  <div class="header-rule"></div>
+    <p class="body-lead" style="color: var(--text-secondary); margin-bottom: var(--sp-2);">✗「点検データをいい感じに整理して」— 書いていない部分は推測で埋まる</p>
+    <div class="an-rows">
+      <div class="an-row"><div class="an-pill an-pill--role"><p>役割</p></div><div class="an-text"><p>あなたは製造現場の品質管理を手伝う担当です</p></div></div>
+      <div class="an-row"><div class="an-pill an-pill--ctx"><p>背景</p></div><div class="an-text"><p>月次の報告会で使う資料の下ごしらえをしたい</p></div></div>
+      <div class="an-row"><div class="an-pill an-pill--inst"><p>指示</p></div><div class="an-text"><p>点検記録を設備ごと・月ごとに、異常が何件あったか数えて</p></div></div>
+      <div class="an-row"><div class="an-pill an-pill--format"><p>形と例</p></div><div class="an-text"><p>表の形で。例：設備A ／ 7月 ／ 3件</p></div></div>
+    </div>
+    <p class="an-caption">つまり、上から下へ、だんだん具体になる順に置く。役割が以降の読み方を決め、背景が推測の基準になり、そのうえで指示、最後に形と例。</p>
+  <p class="page-number">10 / 32</p>
+</div>
+
+<!-- P11: フューショット -->
+<div class="page page--fs" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">フューショット</h2>
+  <p class="key-message">お手本は三〜五個、囲って渡す</p>
+  <div class="header-rule"></div>
+    <div class="code-block">
+      <p><span class="tok-keyword">&lt;example&gt;</span></p>
+      <p>設備A ／ 7月 ／ 3件</p>
+      <p>設備B ／ 7月 ／ 0件</p>
+      <p><span class="tok-keyword">&lt;/example&gt;</span> <span class="tok-comment">← 囲むと、例なのか依頼なのかを区別できる</span></p>
+    </div>
+    <div class="card-row" style="margin-top: var(--sp-2);">
+    <div class="card card--tight">
+      <p class="card-no ">個数</p>
+      <p class="card-title card-title--sm">三〜五個</p>
+      <p class="card-text">一つだと特徴に引きずられ、<br>多すぎても頭打ち</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">渡し方</p>
+      <p class="card-title card-title--sm">タグで囲う</p>
+      <p class="card-text">指示と例の境目がはっきりする</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--3">効く理由</p>
+      <p class="card-title card-title--sm">体裁が伝わる</p>
+      <p class="card-text">表の形や言葉づかいの硬さは、<br>文章で書くより速い</p>
+    </div>
+    </div>
+  <p class="page-number">11 / 32</p>
+</div>
+
+<!-- P12: 役割設定と構造化 -->
+<div class="page" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">役割設定と構造化</h2>
+  <p class="key-message">役割は一文、部品は見出しで分ける</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">役割設定（＝ 立場を一文で）</p>
+      <ul class="bullet-list">
+        <li>「あなたは品質管理を手伝う担当です」</li>
+        <li>一文でも、返ってくる説明の粒度が変わる</li>
+        <li>人に頼むとき無意識にやっていることを、<br>明示するだけ</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">構造化（＝ 見出しで分ける）</p>
+      <ul class="bullet-list">
+        <li>背景 ／ やってほしいこと ／ 出してほしい形</li>
+        <li>見出し三つでも、だらだら書くより安定する</li>
+        <li>公式は XML タグでの区切りを勧めている</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">つまり、どちらも AI に推測させる余地を減らす手当て。身構えて覚える型ではなく、部品が分かれていると伝わればよい。</p>
+  <p class="page-number">12 / 32</p>
+</div>
+
+<!-- P13: つまり — 曖昧さを減らす -->
+<div class="page" data-goal="G2" data-minutes="0.5">
+  <h2 class="slide-heading">つまり — 曖昧さを減らす</h2>
+  <p class="key-message">曖昧さを減らすほど、出力は安定する</p>
+  <div class="header-rule"></div>
+    <div class="dtable">
+      <div class="dtable-row dtable-row--head">
+        <div class="dtable-cell" style="width:320px;"><p>依頼文の四点</p></div>
+        <div class="dtable-cell" style="width:832px;"><p>消える曖昧さ</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:320px;"><p>役割</p></div>
+        <div class="dtable-cell" style="width:832px;"><p>どういう前提で答えるかの曖昧さ</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:320px;"><p>背景・目的</p></div>
+        <div class="dtable-cell" style="width:832px;"><p>何を優先して判断するかの曖昧さ</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:320px;"><p>例</p></div>
+        <div class="dtable-cell" style="width:832px;"><p>どんな体裁で出すかの曖昧さ</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:320px;"><p>構造</p></div>
+        <div class="dtable-cell" style="width:832px;"><p>どこからどこまでが何かの曖昧さ</p></div>
+      </div>
+    </div>
+    <p class="body-cap">四点はどれも、依頼する側がすでに持っている情報。AI が知らないだけ。ただし毎回書くのは続かない。だから次は、<br>渡す情報そのものの設計へ。頼み方の技術は、四段階のうち段階①の設計にあたる。</p>
+  <p class="page-number">13 / 32</p>
+</div>
+
+<!-- P14: コンテキストウィンドウの中身 -->
+<div class="page page--ctx" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">コンテキストウィンドウの中身</h2>
+  <p class="key-message">器の中身は指示・ファイル・応答の全部</p>
+  <div class="header-rule"></div>
+    <div class="ly-stack">
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--1"><p>指示</p></div>
+        <div class="ly-body"><p class="ly-title">自分が打った指示</p><p class="ly-sub">依頼文・訂正・やり取りの全部</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--2"><p>ファイル</p></div>
+        <div class="ly-body"><p class="ly-title">読み込んだファイルの中身</p><p class="ly-sub">@ で渡したもの、AI が自分で開いたもの</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--3"><p>応答</p></div>
+        <div class="ly-body"><p class="ly-title">返ってきた応答</p><p class="ly-sub">画面に出た文章も器に残る</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--4"><p>見えない分</p></div>
+        <div class="ly-body"><p class="ly-title">画面に出ていないもの</p><p class="ly-sub">「設備」で検索した15件の中身まで入る</p></div>
+      </div>
+    </div>
+    <p class="body-cap">つまり、器は体感よりずっと早く埋まる。中身は /context で確認でき、どの CLAUDE.md が読み込まれたかも分かる。</p>
+  <p class="page-number">14 / 32</p>
+</div>
+
+<!-- P15: あふれるとどうなるか -->
+<div class="page" data-goal="G2" data-minutes="1.5">
+  <h2 class="slide-heading">あふれるとどうなるか</h2>
+  <p class="key-message">あふれる前に、古い所は自動で畳まれる</p>
+  <div class="header-rule"></div>
+    <div class="card-row">
+      <div class="card card--hl-1">
+        <p class="card-no">起きること</p>
+        <p class="card-title card-title--sm">古い所が要約されて畳まれる</p>
+        <ul class="bullet-list">
+        <li>エラーにはならないので気づかない</li>
+        <li>最初のほうに伝えた条件ほど薄くなる</li>
+        <li>「元データには触らないで」<br>が後半で効かなくなる</li>
+      </ul>
+      </div>
+      <div class="card">
+        <p class="card-no card-no--2">対策は二つ</p>
+        <p class="card-title card-title--sm">区切る／外に出す</p>
+        <ul class="bullet-list">
+        <li>一段落したら会話を切り、<br>大事な条件だけ渡し直す</li>
+        <li>大きな読み取りはサブエージェントに任せる</li>
+        <li>任せた中身は、自分側の器に入らない</li>
+      </ul>
+      </div>
+    </div>
+    <p class="body-cap">つまり、一度だけ口で伝えた条件は消える前提で扱う。消えてほしくないものは、次の章で扱うファイルに書く。</p>
+  <p class="page-number">15 / 32</p>
+</div>
+
+<!-- P16: @参照で名指しする -->
+<div class="page" data-goal="G2" data-minutes="1.0">
+  <h2 class="slide-heading">@参照で名指しする</h2>
+  <p class="key-message">@でファイルを名指しして渡す</p>
+  <div class="header-rule"></div>
+    <div class="code-block">
+      <p><span class="tok-string">@data/inspection_2607.csv</span> を見て、設備ごとの異常件数を数えて</p>
+    </div>
+    <div style="margin-top: var(--sp-3);">
+      <ul class="bullet-list">
+        <li>名指しなので、似た名前のファイルがあっても読み違えない</li>
+        <li>大きいファイルは、必要な部分だけを切り出して渡すほうが効く</li>
+        <li>社外に出せないものは器に入れない。会社の規定が優先</li>
+      </ul>
+    </div>
+    <p class="body-cap">つまり、渡さない判断も設計のうち。今日のワークは自分の手元のファイルだけで足りる。</p>
+  <p class="page-number">16 / 32</p>
+</div>
+
+<!-- P17: MCP — 外の道具につなぐ口 -->
+<div class="page" data-goal="G2" data-minutes="1.0">
+  <h2 class="slide-heading">MCP — 外の道具につなぐ口</h2>
+  <p class="key-message">MCP は外の道具につなぐ口</p>
+  <div class="header-rule"></div>
+    <div class="io-row">
+      <div class="io-box"><p class="io-label">手元</p><p class="io-title">Claude Code</p><p class="io-sub">使える道具が増える</p></div>
+      <p class="io-arrow">→</p>
+      <div class="io-box io-box--model"><p class="io-label">MCP</p><p class="io-title">外の道具につなぐ口</p><p class="io-sub">接続と認証は、つなぐ側が引き受ける</p></div>
+      <p class="io-arrow">→</p>
+      <div class="io-box"><p class="io-label">外</p><p class="io-title">社内システム</p><p class="io-sub">在庫システムなど</p></div>
+    </div>
+    <p class="io-caption">つまり、つなぎ方を覚える必要はない。誰かが口を用意すれば、Claude 側からは道具が増える。増えた道具も、<br>使う前に明示的な許可が要る。勝手に外を触りに行くことはない。</p>
+  <p class="page-number">17 / 32</p>
+</div>
+
+<!-- P18: つまり — 器を設計する -->
+<div class="page" data-goal="G2" data-minutes="0.5">
+  <h2 class="slide-heading">つまり — 器を設計する</h2>
+  <p class="key-message">入れるものと入れないものを選ぶ</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">器に入れる</p>
+      <ul class="bullet-list">
+        <li>今回の指示</li>
+        <li>判断に要る決まりごと</li>
+        <li>必要な部分だけ切り出したファイル</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">器に入れない</p>
+      <ul class="bullet-list">
+        <li>関係のない資料</li>
+        <li>古いやり取り</li>
+        <li>社外に出せないもの</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">渡す量と精度は比例しない。片っ端から渡したら、肝心の指示が資料に埋もれて的外れになった。渡す情報の技術は、<br>四段階のうち段階②③の材料の設計にあたる。</p>
+  <p class="page-number">18 / 32</p>
+</div>
+
+<!-- P19: .claude の中に何があるか -->
+<div class="page" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">.claude の中に何があるか</h2>
+  <p class="key-message">仕込みの置き場は .claude の中にある</p>
+  <div class="header-rule"></div>
+    <div class="code-block code-block--sm">
+      <p><span class="tok-keyword">~/.claude/</span>  <span class="tok-comment">← ホーム側｜自分の全プロジェクトに効く</span></p>
+      <p>├── CLAUDE.md  <span class="tok-comment">毎回読まれる指示書き（自分の好み）</span></p>
+      <p>└── settings.json  <span class="tok-comment">権限と設定</span></p>
+      <p>&nbsp;</p>
+      <p><span class="tok-keyword">your-project/</span></p>
+      <p>└── <span class="tok-keyword">.claude/</span>  <span class="tok-comment">← プロジェクト側｜git でチームに共有できる</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;├── CLAUDE.md  <span class="tok-comment">このプロジェクトの決まりごと</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;├── rules/  <span class="tok-comment">パスを限った規則</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;├── skills/  <span class="tok-comment">手順のパッケージ</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;└── settings.json  <span class="tok-comment">権限と止めどころ</span></p>
+    </div>
+    <p class="body-cap">つまり、置き場所は二系統。自分の好みはホーム側へ、チームで共有する決まりごとはプロジェクト側へ。区別を誤ると、<br>個人的な好みが他の人の環境にも効いてしまう。全部を最初に作る必要はない。</p>
+  <p class="page-number">19 / 32</p>
+</div>
+
+<!-- P20: CLAUDE.md に何を書くか -->
+<div class="page" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">CLAUDE.md に何を書くか</h2>
+  <p class="key-message">毎回説明し直すことを書いておく</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">書く</p>
+      <ul class="bullet-list">
+        <li>手順 — テストは npm test で走らせる</li>
+        <li>置き場所 — API のコードは src/api に置く</li>
+        <li>決まりごと — コミットメッセージは日本語で</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">書かない（別の場所へ）</p>
+      <ul class="bullet-list">
+        <li>何段階もある手順 → skills へ</li>
+        <li>一部のファイルにだけ関わる規則 → rules へ</li>
+        <li>分量そのもの — 目安は1ファイル200行以内</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">書きどきは、同じ説明を二度目に打ち込んだとき。書き方は検証できる具体性で。「きれいに整形する」<br>ではなく「インデントは半角2つ」、「テストして」ではなく「コミット前に npm test を走らせる」。<br>曖昧な指示は曖昧にしか守られない。</p>
+  <p class="page-number">20 / 32</p>
+</div>
+
+<!-- P21: CLAUDE.md はいつ読まれるか -->
+<div class="page page--ctx" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">CLAUDE.md はいつ読まれるか</h2>
+  <p class="key-message">四つの置き場所が、順に連結される</p>
+  <div class="header-rule"></div>
+    <div class="ly-stack">
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--1"><p>組織</p></div>
+        <div class="ly-body"><p class="ly-title">管理者が置く層</p><p class="ly-sub">個人の設定では外せない</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--2"><p>ユーザー</p></div>
+        <div class="ly-body"><p class="ly-title">ホームの CLAUDE.md</p><p class="ly-sub">自分の全プロジェクトに効く</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--3"><p>プロジェクト</p></div>
+        <div class="ly-body"><p class="ly-title">git で共有される層</p><p class="ly-sub">チーム全員に効く</p></div>
+      </div>
+      <div class="ly-band">
+        <div class="ly-chip ly-chip--4"><p>ローカル</p></div>
+        <div class="ly-body"><p class="ly-title">CLAUDE.local.md</p><p class="ly-sub">自分だけ。git には入れない</p></div>
+      </div>
+    </div>
+    <p class="body-cap">上書きではなく連結される。組織 → ユーザー → プロジェクト → ローカルの順に並び、毎セッション読まれる。<br>ただし強制設定ではなく文脈として扱われる。書いたのに守られないことは起こり得る。必ず止めたいならフックを使う。</p>
+  <p class="page-number">21 / 32</p>
+</div>
+
+<!-- P22: 近い場所ほど後に読まれる -->
+<div class="page" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">近い場所ほど後に読まれる</h2>
+  <p class="key-message">近い場所ほど後に読まれ、強く効く</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">①</p>
+        <p class="flow-step-text">上へたどる</p>
+        <p class="flow-step-sub">作業フォルダから上へ集める</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">②</p>
+        <p class="flow-step-text">順に並ぶ</p>
+        <p class="flow-step-sub">ルートに近いほうから並ぶ</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">③</p>
+        <p class="flow-step-text">後ほど強い</p>
+        <p class="flow-step-sub">近いものほど後に読まれる</p>
+      </div>
+    </div>
+    <div class="card-row" style="margin-top: var(--sp-2);">
+    <div class="card card--tight">
+      <p class="card-no ">サブフォルダ</p>
+      <p class="card-title card-title--sm">読まれるのは触ったとき</p>
+      <p class="card-text">起動時には読まれない。<br>そのフォルダのファイルを AI が読んだとき、<br>初めて読み込まれる（遅延ロード）</p>
+    </div>
+    <div class="card card--tight">
+      <p class="card-no card-no--2">圧縮のあと</p>
+      <p class="card-title card-title--sm">直下だけが戻る</p>
+      <p class="card-text">圧縮されて戻るのはプロジェクト直下だけ。<br>サブフォルダやパス限定の規則は戻らない</p>
+    </div>
+    </div>
+    <p class="body-cap">つまり、大事なことほどプロジェクト直下に書く。口頭で伝えた指示は、圧縮されると消える。</p>
+  <p class="page-number">22 / 32</p>
+</div>
+
+<!-- P23: rules と skills の使い分け -->
+<div class="page" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">rules と skills の使い分け</h2>
+  <p class="key-message">規則は常設、手順はスキルに切り出す</p>
+  <div class="header-rule"></div>
+    <div class="dtable">
+      <div class="dtable-row dtable-row--head">
+        <div class="dtable-cell" style="width:220px;"><p>置き場所</p></div>
+        <div class="dtable-cell" style="width:450px;"><p>いつ読まれるか</p></div>
+        <div class="dtable-cell" style="width:482px;"><p>向いているもの</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:220px;"><p>CLAUDE.md</p></div>
+        <div class="dtable-cell" style="width:450px;"><p>毎セッション、必ず</p></div>
+        <div class="dtable-cell" style="width:482px;"><p>短い決まりごと・置き場所・毎回の手順</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:220px;"><p>.claude/rules/</p></div>
+        <div class="dtable-cell" style="width:450px;"><p>パスの条件に合うファイルを触ったとき</p></div>
+        <div class="dtable-cell" style="width:482px;"><p>特定の領域だけの規約</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:220px;"><p>.claude/skills/</p></div>
+        <div class="dtable-cell" style="width:450px;"><p>必要になったとき、名前を呼んだとき</p></div>
+        <div class="dtable-cell" style="width:482px;"><p>三段階以上の手順のパッケージ</p></div>
+      </div>
+    </div>
+    <p class="body-cap">つまり、いつ読まれてほしいかで決める。パスを限れば、常に全部を読ませなくて済むので器の節約にもなる。<br>CLAUDE.md の一節が「事実」ではなく「手順」に育ったら、スキルへ切り出す合図。</p>
+  <p class="page-number">23 / 32</p>
+</div>
+
+<!-- P24: settings.json — 権限と止めどころ -->
+<div class="page" data-goal="G4" data-minutes="1.5">
+  <h2 class="slide-heading">settings.json — 権限と止めどころ</h2>
+  <p class="key-message">触れる範囲と止めどころを設定で決める</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">CLAUDE.md ＝ お願い</p>
+      <ul class="bullet-list">
+        <li>文脈として伝わるだけ</li>
+        <li>守られないことは起こり得る</li>
+        <li>書きすぎると、かえって守られにくい</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">settings.json ＝ 宣言</p>
+      <ul class="bullet-list">
+        <li>ツールを使う前に許可ルールと突き合わせる</li>
+        <li>どのツールをどこまで使ってよいかを決める</li>
+        <li>読み取りは通す、消す操作は必ず確認</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">つまり、絶対に触られたくない場所があるなら、お願いではなく設定に書く。使い分けだけ覚えて帰ればよい。<br>設定ファイルの書き方は持ち帰り資料に載せる。</p>
+  <p class="page-number">24 / 32</p>
+</div>
+
+<!-- P25: hooks の三階層（イベント → 対象 → 処理） -->
+<div class="page" data-goal="G4" data-minutes="1.5">
+  <h2 class="slide-heading">hooks の三階層（イベント → 対象 → 処理）</h2>
+  <p class="key-message">決まった場面で、決めた処理を自動で走らせる</p>
+  <div class="header-rule"></div>
+    <div class="code-block">
+      <p>{ <span class="tok-string">"PreToolUse"</span>: [          <span class="tok-comment">← ① イベント｜どの場面で</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="tok-string">"matcher"</span>: <span class="tok-string">"Bash"</span>,       <span class="tok-comment">← ② 対象｜何に反応するか</span></p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-string">"hooks"</span>: [ … ] } ] }   <span class="tok-comment">← ③ 処理｜何を走らせるか</span></p>
+    </div>
+    <div class="card card--key" style="margin-top: var(--sp-3);">
+      <p class="card-title card-title--sm">実例｜危ない削除コマンドの手前で止める</p>
+      <p class="card-text">イベントはツールを使う前、対象はコマンド実行、処理は内容を検査して危なければ止める。<br>人が注意していようがいまいが、機械的に止まる。</p>
+    </div>
+    <p class="body-cap">つまり、規律で守るを、仕組みで守るに変える道具。書き方まで今日覚える必要はない。</p>
+  <p class="page-number">25 / 32</p>
+</div>
+
+<!-- P26: 発散の罠 -->
+<div class="page" data-goal="G4" data-minutes="1.5">
+  <h2 class="slide-heading">発散の罠</h2>
+  <p class="key-message">足すほど目的がぼやけて使えなくなる</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">①</p>
+        <p class="flow-step-text">検索を足す</p>
+        <p class="flow-step-sub">あったら便利</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">②</p>
+        <p class="flow-step-text">グラフを足す</p>
+        <p class="flow-step-sub">あったら便利</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">③</p>
+        <p class="flow-step-text">通知を足す</p>
+        <p class="flow-step-sub">あったら便利</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">④</p>
+        <p class="flow-step-text">噛み合わない</p>
+        <p class="flow-step-sub">直すと別が壊れる</p>
+      </div>
+    </div>
+    <div class="emph-band" style="margin-top: var(--sp-3);"><p>原因は一つ — 目的が決まっていない</p></div>
+    <p class="body-cap">目的が決まっていなければ、何が正解かも、何ができたら終わりかも決まらない。終わりが決まっていない作業は終わらない。<br>そして作るのが速い分だけ、発散も速い。手で作っていた頃なら面倒で足さなかったものが、簡単に足せてしまう。</p>
+  <p class="page-number">26 / 32</p>
+</div>
+
+<!-- P27: 先に決める三つ（SDD） -->
+<div class="page page--sdd" data-goal="G4" data-minutes="1.5">
+  <h2 class="slide-heading">先に決める三つ（SDD）</h2>
+  <p class="key-message">作るもの・完成条件・止めどころを決める</p>
+  <div class="header-rule"></div>
+    <div class="st-row">
+      <div class="st-tile">
+        <p class="st-number st-number--1">01</p>
+        <p class="st-label">何を作るか</p>
+        <p class="st-sub">一文で言い切れる大きさに</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--2">02</p>
+        <p class="st-label">何ができたら完成か</p>
+        <p class="st-sub">見て丸かバツか付けられる形に</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--3">03</p>
+        <p class="st-label">どこから自分が見るか</p>
+        <p class="st-sub">止まる場所を先に決める</p>
+      </div>
+    </div>
+    <div class="card card--key" style="margin-top: var(--sp-2);">
+      <p class="card-title card-title--sm">実際に書くと三行</p>
+      <p class="card-text">点検記録から設備ごと月ごとの異常件数を表にする ／ 設備ごとの件数が月別に並んだ表が出たら完成 ／<br> 元データには触らない</p>
+    </div>
+    <p class="body-cap">先に仕様を決めて作る型は SDD（スペックドリブン開発）と呼ばれる。書くのに一分もかからない。</p>
+  <p class="page-number">27 / 32</p>
+</div>
+
+<!-- P28: Plan モードで受ける -->
+<div class="page" data-goal="G4" data-minutes="1.5">
+  <h2 class="slide-heading">Plan モードで受ける</h2>
+  <p class="key-message">Plan モードは調べて計画するだけ</p>
+  <div class="header-rule"></div>
+    <div class="flow-row">
+      <div class="flow-step">
+        <p class="flow-step-no">①</p>
+        <p class="flow-step-text">三行を渡す</p>
+        <p class="flow-step-sub">Plan モードで頼む</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">②</p>
+        <p class="flow-step-text">計画が出る</p>
+        <p class="flow-step-sub">変更は一切しない</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">③</p>
+        <p class="flow-step-text">要らない行を落とす</p>
+        <p class="flow-step-sub">指して「要りません」</p>
+      </div>
+      <p class="flow-arrow">→</p>
+      <div class="flow-step">
+        <p class="flow-step-no">④</p>
+        <p class="flow-step-text">実行に移す</p>
+        <p class="flow-step-sub">納得してから</p>
+      </div>
+    </div>
+    <div class="emph-band" style="margin-top: var(--sp-3);"><p>効くのは、完成条件を決めてあるから</p></div>
+    <p class="body-cap">表が出たら完成、と決めておくと、計画にグラフが入った瞬間に落とせる。決めていないと「あってもいいか」で通してしまい、<br>膨らんだ末に発散する。実装まで進んでから気づくと戻すのが面倒。計画の段階なら一言で済む。</p>
+  <p class="page-number">28 / 32</p>
+</div>
+
+<!-- P29: つまり — 回して寄せる -->
+<div class="page" data-goal="G4" data-minutes="1.0">
+  <h2 class="slide-heading">つまり — 回して寄せる</h2>
+  <p class="key-message">先に決めるのは、直す物差しを持つため</p>
+  <div class="header-rule"></div>
+    <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">✗ 一発で当てるため</p>
+      <ul class="bullet-list">
+        <li>最初に全部決めて一直線に完成させる、<br>ではない</li>
+        <li>途中で違ったと分かることは必ずある</li>
+        <li>早めに出して、見て、直すほうがうまくいく</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">○ 直す物差しを持つため</p>
+      <ul class="bullet-list">
+        <li>何を作るか・何ができたら完成かが決まれば</li>
+        <li>出てきたものが狙いに近いか遠いか判断できる</li>
+        <li>物差しがないと、直すつもりが迷走になる</li>
+      </ul>
+    </div>
+    </div>
+    <p class="body-cap">先に決めるのは三行で足りる。分厚くすると、今度は仕様書を書くこと自体が目的になる。回し方の技術は、<br>四段階のうち段階④から次の一周へ戻るところの設計にあたる。</p>
+  <p class="page-number">29 / 32</p>
+</div>
+
+<!-- P30: ワークの進め方 -->
+<div class="page" data-goal="G3,G4" data-minutes="1.5">
+  <h2 class="slide-heading">ワークの進め方</h2>
+  <p class="key-message">24分で最初の一行を仕込む</p>
+  <div class="header-rule"></div>
+    <div class="st-row">
+      <div class="st-tile">
+        <p class="st-number st-number--1">01</p>
+        <p class="st-label">何を書くか決める</p>
+        <p class="st-sub">同じ説明を二度以上していること</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--2">02</p>
+        <p class="st-label">CLAUDE.md に書く</p>
+        <p class="st-sub">今日触っているプロジェクトの直下</p>
+      </div>
+      <div class="st-tile">
+        <p class="st-number st-number--3">03</p>
+        <p class="st-label">/context で確認</p>
+        <p class="st-sub">自分の CLAUDE.md が出ていれば成功</p>
+      </div>
+    </div>
+    <p class="body-cap">例を三つ。言葉づかい「回答は日本語で書く」／ 触ってほしくない場所「data の中のファイルは変更しない」／<br> 毎回の手順「変更したら必ずテストを走らせる」。書き方は具体的に。思いつかない方、詰まった方は手を挙げてください。</p>
+  <p class="page-number">30 / 32</p>
+</div>
+
+<!-- P31: 各自ワーク -->
+<div class="page" data-goal="G3" data-minutes="24">
+  <h2 class="slide-heading">各自ワーク</h2>
+  <p class="key-message">自分の .claude に一つ入れる</p>
+  <div class="header-rule"></div>
+    <div class="emph-band"><p>24分 — 自分の .claude に、最初の一行を入れる</p></div>
+    <div style="margin-top: var(--sp-4);">
+      <ul class="bullet-list">
+        <li>一行でよい。動くツールを作る時間ではない</li>
+        <li>詰まったら手を挙げてください。巡回します</li>
+        <li>余裕のある方は settings.json の権限か、skills への切り出しへ</li>
+      </ul>
+    </div>
+  <p class="page-number">31 / 32</p>
+</div>
+
+<!-- P32: 持ち帰る地図 -->
+<div class="page page--recap" data-goal="G3,G4" data-minutes="2.0">
+  <h2 class="slide-heading">持ち帰る地図</h2>
+  <p class="key-message">持ち帰るのは、地図と最初の一行</p>
+  <div class="header-rule"></div>
+    <div class="dtable">
+      <div class="dtable-row dtable-row--head">
+        <div class="dtable-cell" style="width:400px;"><p>動作の四段階</p></div>
+        <div class="dtable-cell" style="width:752px;"><p>設計する技術</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:400px;"><p>① 頼む</p></div>
+        <div class="dtable-cell" style="width:752px;"><p>プロンプト｜頼み方</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:400px;"><p>② 計画・③ 実行</p></div>
+        <div class="dtable-cell" style="width:752px;"><p>コンテキスト｜渡す情報</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:400px;"><p>①〜④ の土台</p></div>
+        <div class="dtable-cell" style="width:752px;"><p>ハーネス｜常設の仕掛け</p></div>
+      </div>
+      <div class="dtable-row">
+        <div class="dtable-cell" style="width:400px;"><p>④ 確認 → もう一周</p></div>
+        <div class="dtable-cell" style="width:752px;"><p>ループ｜回し方</p></div>
+      </div>
+    </div>
+    <div class="card card--key" style="margin-top: var(--sp-2);">
+      <p class="card-title card-title--sm">次の一手</p>
+      <p class="card-text">短い決まりごとが増えたら rules へ。三段階以上の手順になったら skills へ。<br>絶対に止めたいものが出てきたら settings.json の権限か hooks へ。</p>
+    </div>
+  <p class="page-number">32 / 32</p>
+</div>
+
+
+
+</body></html>

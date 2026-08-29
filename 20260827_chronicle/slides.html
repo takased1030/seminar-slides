@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>XXX Chronicle 紹介 — 現場の記録を、そのまま改善につなぐ</title>
+<style>
+
+
+
+/* ===== tokens.css を内包(外部参照0件。単一の真実は slide_designsystem/tokens.css) ===== */
+/* ============================================================
+   スライド デザイントークン v0.1
+   - すべて 6桁hex(rgba / hsl / 8桁hex 禁止)
+   - グラデーション禁止・アニメーション禁止
+   - テーマは <body data-theme="..."> で切り替える
+   ============================================================ */
+
+/* ---------- 共通パレット(Anthropic公式ブランドカラー) ---------- */
+:root {
+  --palette-dark:       #141413;
+  --palette-light:      #faf9f5;
+  --palette-mid-gray:   #b0aea5;
+  --palette-light-gray: #e8e6dc;
+  --palette-orange:     #d97757;  /* Accent 主 */
+  --palette-blue:       #6a9bcc;  /* Accent 副 */
+  --palette-green:      #788c5d;  /* Accent 第三 */
+
+  /* ---------- タイポグラフィ ---------- */
+  /* 和文優先: Noto Sans JP を第一指定(2026-07-13 ユーザー決定・変換実測用)。
+     PPTXでは先頭ファミリ名が latin/ea 両方の typeface になる(§2.4 実測) */
+  --font-heading: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-body:    "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-mono:    "Consolas", "SF Mono", "Noto Sans Mono CJK JP", "MS Gothic", "Noto Sans JP", monospace;
+
+  /* html2pptx が注入する正規化CSSの変数を上書き(2026-07-13 実測):
+     注入CSSは p/ul/ol/li と h1-h6 に要素セレクタで Arial を直指定するため、
+     この2変数の上書き+下の p,li ルールの両方で Noto Sans JP を強制する */
+  --font-family-display: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+  --font-family-content: "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
+
+  /* サイズ段階(px × 0.75 = pt)。階層: タイトル > キーメッセージ > ボディ(2026-07-13) */
+  --fs-cover-title: 64px;   /* 48pt */
+  --fs-cover-sub:   30px;   /* 22.5pt */
+  --fs-heading:     48px;   /* 36pt */
+  --fs-subheading:  30px;   /* 22.5pt */
+  --fs-keymsg:      34px;   /* 25.5pt キーメッセージ(タイトル直下) */
+  --fs-body:        24px;   /* 18pt */
+  --fs-body-sm:     22px;   /* 16.5pt 詰め込み系ボディ(カード・表・コード等) */
+  --fs-caption:     18px;   /* 13.5pt */
+  --fs-footnote:    14px;   /* 10.5pt ページ番号(下端マージン検査対象外) */
+  --fs-section-no:  104px;  /* 78pt 章番号 */
+  --fs-watermark:   200px;  /* 150pt 表紙ウォーターマーク(読ませない装飾。cover--wm 専用) */
+
+  --lh-heading: 1.25;
+  --lh-body:    1.6;
+
+  /* ---------- スペーシング段階(任意値の混在禁止) ---------- */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 48px;
+  --sp-6: 64px;
+
+  /* キャンバス: 1280×720固定・セーフマージン48px以上 */
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --slide-pad: 64px;
+
+  --radius-card: 12px;
+  --border-w: 2px;
+}
+
+/* ===== 案B: claude-gray(落ち着いた灰紙)= 既定 ===== */
+body,
+body[data-theme="claude-gray"] {
+  --bg:             #e8e6dc;
+  --text:           #141413;
+  --text-secondary: #63615a;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #faf9f5;
+  --card-border:    #d5d3c8;
+  --code-bg:        #141413;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #dedbd0;
+  --line:           #d5d3c8;
+  --muted-bg:       #dedbd0;
+  --shadow-color:   #d5d3c8;
+  --venn-a:         #6a9bcc73;
+  --venn-b:         #788c5d73;
+  /* 適性ヒート表(heat)の淡色塗り(2026-07-13 図解16型全採用で追加) */
+  --heat-good:      #dfe6d2;
+  --heat-ok:        #dbe4ee;
+  --heat-part:      #f2ddd0;
+  --heat-no:        #dedbd0;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #b9573a;
+  --accent-strong:  #b9573a;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #f2ddd0;
+  --tint-blue:      #dbe4ee;
+  --tint-green:     #dfe6d2;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案C: claude-dark(暗室・大型モニタ向け) ===== */
+body[data-theme="claude-dark"] {
+  --bg:             #141413;
+  --text:           #faf9f5;
+  --text-secondary: #b0aea5;
+  --accent:         #d97757;
+  --accent-2:       #6a9bcc;
+  --accent-3:       #788c5d;
+  --card-bg:        #232321;
+  --card-border:    #3d3d3a;
+  --code-bg:        #232321;
+  --code-text:      #faf9f5;
+  --table-head-bg:  #232321;
+  --line:           #3d3d3a;
+  --muted-bg:       #1d1d1b;
+  --shadow-color:   #0a0a09;
+  --venn-a:         #6a9bcc8c;
+  --venn-b:         #788c5d8c;
+  --heat-good:      #2b3325;
+  --heat-ok:        #24303d;
+  --heat-part:      #3d2a22;
+  --heat-no:        #1d1d1b;
+  /* 2026-07-21 オレンジ増量ブラッシュアップ(HANDOFF §1) */
+  --accent-heading: #d97757;
+  --accent-strong:  #e5977c;
+  --accent-on:      #faf9f5;
+  --tint-orange:    #3d2a22;
+  --tint-blue:      #24303d;
+  --tint-green:     #2b3325;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #141413;
+  --wm-ink:         #2b2b29;
+  --wm-text:        #faf9f5;
+  --wm-sub:         #b0aea5;
+  --wm-line:        #3d3d3a;
+  --wm-accent:      #d97757;
+}
+/* ===== 案D: ink-citrus(エディトリアル。インクの輪郭+柑橘) ===== */
+body[data-theme="ink-citrus"] {
+  --bg:             #fbfbf7;
+  --text:           #20222c;
+  --text-secondary: #5f6370;
+  --accent:         #e8590c;
+  --accent-2:       #2b6cb0;
+  --accent-3:       #37803b;
+  --card-bg:        #fdfdfa;
+  --card-border:    #20222c;
+  --code-bg:        #20222c;
+  --code-text:      #f4f4ef;
+  --table-head-bg:  #edede4;
+  --line:           #c9cad1;
+  --muted-bg:       #f0f0ea;
+  --shadow-color:   #20222c;
+  --venn-a:         #2b6cb066;
+  --venn-b:         #37803b66;
+  --heat-good:      #e4eddb;
+  --heat-ok:        #dde8f3;
+  --heat-part:      #f8e3d3;
+  --heat-no:        #f0f0ea;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #e8590c;
+  --accent-strong:  #e8590c;
+  --accent-on:      #fdfdfa;
+  --tint-orange:    #f8e3d3;
+  --tint-blue:      #dde8f3;
+  --tint-green:     #e4eddb;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #20222c;
+  --wm-ink:         #2f323e;
+  --wm-text:        #fbfbf7;
+  --wm-sub:         #a8abb6;
+  --wm-line:        #3a3d4a;
+  --wm-accent:      #f4772e;
+}
+/* ===== 案F: cyber-terminal(端末風ダーク。緑+青+琥珀) ===== */
+body[data-theme="cyber-terminal"] {
+  --bg:             #0d1117;
+  --text:           #e6edf3;
+  --text-secondary: #8b949e;
+  --accent:         #3fb950;
+  --accent-2:       #58a6ff;
+  --accent-3:       #d29922;
+  --card-bg:        #161b22;
+  --card-border:    #30363d;
+  --code-bg:        #010409;
+  --code-text:      #e6edf3;
+  --table-head-bg:  #161b22;
+  --line:           #30363d;
+  --muted-bg:       #11151c;
+  --shadow-color:   #010409;
+  --venn-a:         #58a6ff59;
+  --venn-b:         #3fb95059;
+  --heat-good:      #12261a;
+  --heat-ok:        #132639;
+  --heat-part:      #2e2413;
+  --heat-no:        #11151c;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #3fb950;
+  --accent-strong:  #3fb950;
+  --accent-on:      #010409;
+  --tint-orange:    #2e2413;
+  --tint-blue:      #132639;
+  --tint-green:     #12261a;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #010409;
+  --wm-ink:         #12181f;
+  --wm-text:        #e6edf3;
+  --wm-sub:         #8b949e;
+  --wm-line:        #30363d;
+  --wm-accent:      #3fb950;
+}
+/* ===== 案H: blueprint(製図・図面風。鋼青×製図ブルー) =====
+   swiss-red は 2026-07-13 ユーザー破棄のため削除し、現行候補5テーマに同期 */
+body[data-theme="blueprint"] {
+  --bg:             #f2f5f7;
+  --text:           #24344d;
+  --text-secondary: #5d6b7e;
+  --accent:         #1e6bb8;
+  --accent-2:       #e8590c;
+  --accent-3:       #37b24c;
+  --card-bg:        #fbfcfd;
+  --card-border:    #c9d4de;
+  --code-bg:        #24344d;
+  --code-text:      #f2f5f7;
+  --table-head-bg:  #e3eaf0;
+  --line:           #c9d4de;
+  --muted-bg:       #e8eef3;
+  --shadow-color:   #c9d4de;
+  --venn-a:         #1e6bb866;
+  --venn-b:         #37b24c59;
+  --heat-good:      #ddf0e0;
+  --heat-ok:        #dbe9f6;
+  --heat-part:      #fae3d4;
+  --heat-no:        #e8eef3;
+  /* 2026-07-21 フォールバック(HANDOFF §6 末尾。試着室未レビュー・accent系から流用) */
+  --accent-heading: #1e6bb8;
+  --accent-strong:  #1e6bb8;
+  --accent-on:      #fbfcfd;
+  --tint-orange:    #fae3d4;
+  --tint-blue:      #dbe9f6;
+  --tint-green:     #ddf0e0;
+  --cat-1:          var(--accent);
+  --cat-2:          var(--accent-2);
+  --cat-3:          var(--accent-3);
+  --cat-4:          #9c7fb5;
+  --cat-5:          #58989b;
+  --cat-6:          #ac8a3c;
+  /* 表紙バリアント cover--wm(ウォーターマーク型)。暗色面+背面の極太英字 */
+  --wm-bg:          #24344d;
+  --wm-ink:         #31445f;
+  --wm-text:        #f2f5f7;
+  --wm-sub:         #aebbca;
+  --wm-line:        #3d5273;
+  --wm-accent:      #6ab0ea;
+}
+
+/* ===== 骨格の基礎スタイル ===== */
+
+  /* デザインシステム共通のリセット(slide-samples / run-04 と同一)。
+     これが無いと padding が加算され 1280x720 にならない */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #b0aea5; font-family: var(--font-body); color: var(--text); }
+  .page {
+    width: 1280px; height: 720px; background: var(--bg); color: var(--text);
+    overflow: hidden; position: relative;
+    padding: 48px var(--slide-pad) var(--slide-pad); margin: 0 auto 24px auto;
+  }
+  @media print { @page { size: 1280px 720px; margin: 0; } body { background: none; }
+    .page { margin: 0; page-break-after: always; } }
+
+  /* 中面(3部構成のうちタイトルとキーメッセージのみ確定。ボディは空欄) */
+  .slide-heading { font-family: var(--font-heading); font-size: var(--fs-heading);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 10px; }
+  .key-message { font-family: var(--font-heading); font-size: var(--fs-keymsg);
+    font-weight: 500; line-height: 1.35; color: var(--text-secondary);
+    margin: 0 0 12px; max-width: 1020px; }
+  .header-rule { border-bottom: 1px solid var(--line); margin-bottom: var(--sp-4); }
+  .page-number { position: absolute; right: 48px; bottom: 24px;
+    font-family: var(--font-heading); font-size: var(--fs-footnote); color: var(--text-secondary); }
+
+
+  /* 表紙(既定) */
+  .page--cover { display: flex; flex-direction: column; justify-content: center;
+    align-items: center; text-align: center; }
+  .cover-kicker { font-family: var(--font-heading); font-size: var(--fs-caption);
+    font-weight: 700; letter-spacing: 6px; color: var(--accent); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-title { font-family: var(--font-heading); font-size: var(--fs-cover-title);
+    font-weight: 700; line-height: var(--lh-heading); margin: 0 0 var(--sp-3); }
+  .page--cover .slide-subtitle { font-size: var(--fs-cover-sub); color: var(--text-secondary);
+    margin: 0 0 var(--sp-5); line-height: 1.4; }
+  .page--cover .cover-meta { font-size: var(--fs-body); color: var(--text-secondary); margin: 0; }
+  .cover-wm { display: none; }
+
+  /* 表紙バリアント: ウォーターマーク(cover--wm)。原本 slide_designsystem/samples より写す */
+  body .page--cover.cover--wm {
+    background: var(--wm-bg); color: var(--wm-text);
+    align-items: flex-start; text-align: left;
+    justify-content: flex-end;
+    padding: 48px var(--slide-pad) var(--sp-6);
+  }
+  body .page--cover.cover--wm .cover-wm {
+    display: block; position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-56%);
+    font-family: var(--font-heading); font-size: var(--fs-watermark); font-weight: 900;
+    line-height: 1; letter-spacing: -0.02em; text-align: center; white-space: nowrap;
+    color: var(--wm-ink);
+  }
+  body .page--cover.cover--wm .cover-kicker {
+    position: absolute; top: 56px; left: var(--slide-pad); margin: 0; color: var(--wm-accent);
+  }
+  body .page--cover.cover--wm .slide-title {
+    position: relative; font-size: var(--fs-cover-title); color: var(--wm-text);
+    margin-bottom: var(--sp-3);
+  }
+  body .page--cover.cover--wm .slide-subtitle {
+    position: relative; font-size: var(--fs-caption); line-height: 1.9;
+    color: var(--wm-sub); margin-bottom: 0;
+  }
+  body .page--cover.cover--wm .cover-rule {
+    display: block; width: 100%; border-top: 1px solid var(--wm-line);
+    margin: var(--sp-5) 0 var(--sp-3);
+  }
+  body .page--cover.cover--wm .cover-meta {
+    position: relative; display: flex; width: 100%; justify-content: space-between;
+    align-items: baseline; font-size: var(--fs-caption); font-weight: 700; color: var(--wm-text);
+  }
+  body .page--cover.cover--wm .cover-date { font-weight: 400; letter-spacing: 2px; color: var(--wm-sub); }
+  body .page--cover.cover--wm .page-number,
+  body .page--cover.cover--wm .skeleton-meta { color: var(--wm-sub); }
+
+  
+
+  /* ---- 回ローカル: ボディを見出しの下の残り領域に縦中央で置く(下端の空きが目立つため) ---- */
+  .page:not(.page--cover):not(.page--bridge) { display: flex; flex-direction: column; }
+  .slide-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .slide-body > *:first-child { margin-top: 0; }
+
+  /* ---- 回ローカル: 担い手(現場/技術)を2色で通す。背景ページで導入し、変わるページにだけ添える ---- */
+  /* .page--flow .flow-step-no 等(詳細度0,2,0)に負けないよう .page を前置する */
+  .page .role-genba { color: var(--accent); font-weight: 700; }
+  .page .role-gijutsu { color: var(--accent-2); font-weight: 700; }
+  .role-line { font-size: var(--fs-caption); color: var(--text-secondary); margin-bottom: var(--sp-1); line-height: 1.5; }
+
+  /* ---- 回ローカル: 集合図の面を担い手の色にする。面の重なりを出すため alpha 付き(venn 系と同じ扱い) ---- */
+  .venn-canvas { position: relative; height: 330px; }
+  .set-box { position: absolute; border-radius: 24px; }
+  .set-box--genba { background: #d9775747; }
+  .set-box--gijutsu { background: #6a9bcc47; }
+  .set-region { position: absolute; text-align: center; }
+  .set-title { font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body); margin-bottom: var(--sp-2); }
+  .set-text { font-size: var(--fs-caption); line-height: 1.8; color: var(--text); }
+  .set-text { font-size: var(--fs-caption); line-height: 1.9; color: var(--text); }
+
+/* ---- 表(dtable) 基底: slide-samples-12types.html より ---- */
+body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; }
+/* ---------- 9. 表(table) ----------
+   注意: <table> 要素は html2pptx で変換されず丸ごと消える(2026-07-13 実測)。
+   表は必ずこの div ベース構造(dtable)で組むこと。 */
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--c1 { width: 240px; }
+.dtable-cell--c2 { width: 440px; }
+.dtable-cell--c3 { width: 440px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+
+  /* ---- 回ローカル: 技術パートの表(4列)。列幅は 1152px を配分 ---- */
+  .dtable-cell--t1 { width: 230px; }
+  .dtable-cell--t2 { width: 540px; }
+  .dtable-cell--t3 { width: 382px; }
+  .dtable-cell { padding: 12px var(--sp-2); }
+  .dtable-cell p { font-size: var(--fs-caption); line-height: 1.5; }
+  /* ---- 回ローカル: コンセプト図の中に入れる画面名 ---- */
+  .cy-screen { color: var(--accent-strong); font-weight: 700; }
+
+  /* ---- 回ローカル: 画面キャプチャ4枚を1段4列。どの画面でどの技術が使われているかを見せる ---- */
+  .shot-row { display: flex; gap: var(--sp-3); }
+  .shot { width: 264px; }
+  .shot img { display: block; width: 264px; height: 170px; object-fit: cover; object-position: top center;
+    border: 1px solid var(--card-border); border-radius: 8px; }
+  .shot-tech { margin-top: var(--sp-2); font-family: var(--font-heading); font-weight: 700;
+    font-size: var(--fs-caption); color: var(--accent-strong); line-height: 1.4; }
+  .shot-kind { margin-top: 4px; font-size: var(--fs-caption); color: var(--text); line-height: 1.4; }
+  .shot-note { margin-top: 4px; font-size: var(--fs-caption); color: var(--text-secondary); line-height: 1.4; }
+  /* 実演へのブリッジ(進行要素)。見出しだけを中央に置く */
+  .page--bridge { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .page--bridge .slide-heading { font-size: var(--fs-cover-title); margin: 0; }
+
+/* ---------- 4. 箇条書き本文(bullets) ---------- */
+.bullet-list { list-style-position: outside; padding-left: 32px; }
+.bullet-list li {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-2);
+}
+.bullet-list li b { font-weight: 700; }
+/* ---------- 5. カード型本文(cards) ---------- */
+.card-row { display: flex; gap: var(--sp-3); }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.card .card-no p, .summary-item .summary-no p { margin: 0; color: var(--accent-on); font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; line-height: inherit; }
+.card .card-no {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: var(--accent);
+  color: var(--accent-on);
+  border-radius: 999px;
+  padding: var(--sp-1) var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+.card .card-no--2 { background: var(--accent-2); }
+.card .card-no--3 { background: var(--accent-3); }
+.card .card-title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+}
+.card .card-text { font-size: var(--fs-body-sm); line-height: var(--lh-body); }
+.card--shadow { box-shadow: 4px 4px 0px var(--shadow-color); }
+/* 変換検証用: 単純ドロップシャドウ1段 */
+/* --- カード2モード(2026-07-21 HANDOFF §3): 並列フォーカス(hl-1/2/3) と 単一フォーカス(key) --- */
+.card--hl-1 { background: var(--tint-orange); border-color: var(--accent); }
+.card--hl-2 { background: var(--tint-blue); border-color: var(--accent-2); }
+.card--hl-3 { background: var(--tint-green); border-color: var(--accent-3); }
+.card--key { background: var(--tint-orange); border-color: var(--accent); }
+/* ---------- 7. 2カラム比較(compare) ---------- */
+.compare-row { display: flex; gap: var(--sp-3); }
+.compare-col {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-4);
+}
+.compare-col .compare-label {
+  font-family: var(--font-heading);
+  font-size: var(--fs-subheading);
+  font-weight: 700;
+  margin-bottom: var(--sp-3);
+}
+.compare-col--before { background: var(--muted-bg); border-color: var(--muted-bg); }
+.compare-col--after { background: var(--tint-orange); border-color: var(--accent); }
+.compare-col--before .compare-label { color: var(--text-secondary); }
+.compare-col--after  .compare-label { color: var(--accent); }
+.compare-col .bullet-list li { font-size: var(--fs-body-sm); }
+/* ---------- 8. フロー図(flow) ---------- */
+.flow-row { display: flex; align-items: center; gap: var(--sp-2); }
+.flow-step {
+  flex: 1;
+  background: var(--card-bg);
+  border: var(--border-w) solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3) var(--sp-2);
+  text-align: center;
+}
+.flow-step--current { background: var(--tint-orange); border-color: var(--accent); }
+.flow-step .flow-step-no {
+  font-family: var(--font-heading);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: var(--sp-1);
+}
+.flow-step .flow-step-text { font-size: var(--fs-body-sm); font-weight: 700; }
+.flow-step .flow-step-sub { font-size: var(--fs-caption); color: var(--text-secondary); margin-top: var(--sp-1); }
+.flow-arrow {
+  font-size: var(--fs-subheading);
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.diagram-note {
+  position: absolute;
+  left: 64px;
+  bottom: 24px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-footnote);
+  color: var(--text-secondary);
+}
+/* ---------- 3. 入出力図(io) ---------- */
+.io-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.io-box {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: var(--sp-3);
+  width: 290px;
+  text-align: center;
+}
+.io-box--model { width: 400px; border: 2px solid var(--accent); background: var(--tint-orange); padding: var(--sp-4) var(--sp-3); }
+.io-label { font-family: var(--font-heading); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 2px; color: var(--accent-2); margin-bottom: var(--sp-1); }
+.io-box--model .io-label { color: var(--accent-heading); }
+.io-title { font-family: var(--font-heading); font-size: var(--fs-body-sm); font-weight: 700; margin-bottom: var(--sp-1); }
+.io-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.io-box--model .io-sub { color: var(--text); }
+.io-arrow { font-size: var(--fs-keymsg); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.io-caption { margin-top: var(--sp-4); font-size: var(--fs-caption); color: var(--text-secondary); text-align: center; }
+.at-item-no p, .cy-center p { margin: 0; font-family: inherit; font-size: inherit; font-weight: inherit; color: inherit; line-height: inherit; }
+/* ---------- 9. サイクル図(cycle) ----------
+   回転不可のため 2×2 配置 + 四辺の矢印グリフで環を構成 */
+.cy-canvas { position: relative; height: 430px; }
+.cy-card {
+  position: absolute; width: 380px; height: 140px;
+  background: var(--card-bg); border: 2px solid var(--card-border);
+  border-radius: var(--radius-card); padding: 18px 24px;
+}
+.cy-step { font-family: var(--font-heading); font-size: var(--fs-footnote); font-weight: 700; margin-bottom: 4px; }
+.cy-step--1 { color: var(--cat-1); }
+.cy-step--2 { color: var(--cat-2); }
+.cy-step--3 { color: var(--cat-3); }
+.cy-step--4 { color: var(--cat-4); }
+.cy-title { font-family: var(--font-heading); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.cy-sub { font-size: var(--fs-caption); color: var(--text-secondary); }
+.cy-arrow { position: absolute; font-size: var(--fs-keymsg); font-weight: 700; color: var(--text-secondary); font-family: var(--font-heading); }
+.cy-center {
+  position: absolute; font-family: var(--font-heading); font-size: 18px; font-weight: 700;
+  color: var(--accent-heading); text-align: center;
+  background: var(--tint-orange); border: 2px solid var(--accent); border-radius: var(--radius-card);
+  padding: 12px 16px;
+}
+/* ---------- 12. 変換図(delta) ----------
+   注: 大数字はキーメッセージ(34px)超のため、フォント階層の例外裁定が必要 */
+.dl-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+.dl-card { width: 400px; border-radius: var(--radius-card); padding: 26px 32px; text-align: center; }
+.dl-card--before { background: var(--muted-bg); border: 2px solid var(--muted-bg); }
+.dl-card--after { background: var(--tint-orange); border: 2px solid var(--accent); }
+.dl-label { font-family: var(--font-heading); font-size: 18px; font-weight: 700; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 6px; }
+.dl-card--after .dl-label { color: var(--accent-heading); }
+.dl-number { font-family: var(--font-heading); font-size: 68px; font-weight: 700; line-height: 1.15; margin-bottom: 6px; }
+.dl-card--after .dl-number { color: var(--accent-heading); }
+.dl-sub { font-size: var(--fs-caption); line-height: 1.5; color: var(--text-secondary); }
+.dl-card--after .dl-sub { color: var(--text); }
+.dl-mid { width: 190px; text-align: center; }
+.dl-mid-arrow { font-family: var(--font-heading); font-size: var(--fs-keymsg); font-weight: 700; color: var(--text-secondary); }
+.dl-mid-caption { font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); margin-top: 4px; }
+.dl-band { margin-top: var(--sp-3); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: var(--radius-card); padding: 14px 24px; }
+.dl-band p { font-size: var(--fs-body-sm); font-weight: 700; text-align: center; }
+  /* ---- 回ローカル: カード4枚を1段4列で組む(slide-guide §6-2 の実測より 2×2 にしない) ---- */
+  .card--tight { padding: var(--sp-3); }
+  .card--tight .card-title { font-size: var(--fs-body); }
+  .card--tight .card-text { font-size: var(--fs-caption); }
+  /* ---- 回ローカル: 技術タグ(ゴールG3)。平易な言い換え＋技術名の対を1〜2個だけ置く ---- */
+  .tech-tag {
+    margin-top: var(--sp-2); padding: 10px 20px;
+    border-left: 4px solid var(--accent); background: var(--muted-bg);
+  }
+  /* 行数lintは 高さ÷行高 で描画行を数えるため、padding は外側の div に持たせる(2026-08-19 教訓) */
+  .tech-tag p { font-size: var(--fs-caption); line-height: 1.5; color: var(--text); }
+  .tech-tag-label { color: var(--accent-heading); font-weight: 700; margin-right: 10px; }
+  /* ---- 回ローカル: 図に添える一行の注記 ---- */
+  .body-note { margin-top: var(--sp-3); font-size: var(--fs-caption); color: var(--text-secondary); line-height: 1.5; }
+
+
+  /* ---- 回ローカル: ボディを見出しの下の残り領域に縦中央で置く(下端の空きが目立つため) ---- */
+  .page:not(.page--cover):not(.page--bridge) { display: flex; flex-direction: column; }
+  .slide-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .slide-body > *:first-child { margin-top: 0; }
+
+  /* ---- 回ローカル: 担い手(現場/技術)を2色で通す。背景ページで導入し、変わるページにだけ添える ---- */
+  /* .page--flow .flow-step-no 等(詳細度0,2,0)に負けないよう .page を前置する */
+  .page .role-genba { color: var(--accent); font-weight: 700; }
+  .page .role-gijutsu { color: var(--accent-2); font-weight: 700; }
+  .role-line { font-size: var(--fs-caption); color: var(--text-secondary); margin-bottom: var(--sp-1); line-height: 1.5; }
+
+  /* ---- 回ローカル: 集合図の面を担い手の色にする。面の重なりを出すため alpha 付き(venn 系と同じ扱い) ---- */
+  .venn-canvas { position: relative; height: 330px; }
+  .set-box { position: absolute; border-radius: 24px; }
+  .set-box--genba { background: #d9775747; }
+  .set-box--gijutsu { background: #6a9bcc47; }
+  .set-region { position: absolute; text-align: center; }
+  .set-title { font-family: var(--font-heading); font-weight: 700; font-size: var(--fs-body); margin-bottom: var(--sp-2); }
+  .set-text { font-size: var(--fs-caption); line-height: 1.8; color: var(--text); }
+  .set-text { font-size: var(--fs-caption); line-height: 1.9; color: var(--text); }
+
+/* ---- 表(dtable) 基底: slide-samples-12types.html より ---- */
+body[data-theme="ink-citrus"] .dtable-row--head { border-bottom-color: #20222c; }
+/* ---------- 9. 表(table) ----------
+   注意: <table> 要素は html2pptx で変換されず丸ごと消える(2026-07-13 実測)。
+   表は必ずこの div ベース構造(dtable)で組むこと。 */
+.dtable-row { display: flex; border-bottom: 1px solid var(--line); }
+.dtable-row--head { border-bottom: 2px solid var(--text); background: var(--table-head-bg); }
+.dtable-cell { padding: var(--sp-2) var(--sp-3); }
+.dtable-cell p { font-size: var(--fs-body-sm); line-height: 1.5; }
+.dtable-row--head .dtable-cell p { font-family: var(--font-heading); font-weight: 700; }
+.dtable-cell--c1 { width: 240px; }
+.dtable-cell--c2 { width: 440px; }
+.dtable-cell--c3 { width: 440px; }
+.dtable-cell .cell-accent { color: var(--accent); font-weight: 700; }
+
+  /* ---- 回ローカル: 技術パートの表(4列)。列幅は 1152px を配分 ---- */
+  .dtable-cell--t1 { width: 230px; }
+  .dtable-cell--t2 { width: 540px; }
+  .dtable-cell--t3 { width: 382px; }
+  .dtable-cell { padding: 12px var(--sp-2); }
+  .dtable-cell p { font-size: var(--fs-caption); line-height: 1.5; }
+  /* ---- 回ローカル: コンセプト図の中に入れる画面名 ---- */
+  .cy-screen { color: var(--accent-strong); font-weight: 700; }
+
+  /* ---- 回ローカル: 画面キャプチャ4枚を1段4列。どの画面でどの技術が使われているかを見せる ---- */
+  .shot-row { display: flex; gap: var(--sp-3); }
+  .shot { width: 264px; }
+  .shot img { display: block; width: 264px; height: 170px; object-fit: cover; object-position: top center;
+    border: 1px solid var(--card-border); border-radius: 8px; }
+  .shot-tech { margin-top: var(--sp-2); font-family: var(--font-heading); font-weight: 700;
+    font-size: var(--fs-caption); color: var(--accent-strong); line-height: 1.4; }
+  .shot-kind { margin-top: 4px; font-size: var(--fs-caption); color: var(--text); line-height: 1.4; }
+  .shot-note { margin-top: 4px; font-size: var(--fs-caption); color: var(--text-secondary); line-height: 1.4; }
+  /* 実演へのブリッジ(進行要素)。見出しだけを中央に置く */
+  .page--bridge { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .page--bridge .slide-heading { font-size: var(--fs-cover-title); margin: 0; }
+  .page--bridge .tech-tag { margin-top: var(--sp-5); max-width: 900px; }
+</style>
+</head>
+
+<body data-theme="claude-dark">
+
+<!-- P1: 表紙(ウォーターマーク型・英字=PDCA) -->
+<div class="page page--cover cover--wm" data-goal="-" data-minutes="0.3">
+  <div class="cover-wm">PDCA</div>
+  <p class="cover-kicker">FIELD RECORDS</p>
+  <h1 class="slide-title">XXX Chronicle</h1>
+  <p class="slide-subtitle">現場の記録を、そのまま改善につなぐ</p>
+  <div class="cover-rule"></div>
+  <p class="cover-meta"><span>発表者: 高瀬</span><span class="cover-date">2026.08.27</span></p>
+  <p class="page-number">01 / 9</p>
+</div>
+
+<!-- P2: 現場の仕事と、技術の仕事(set・交差型) -->
+<div class="page page--venn" data-goal="G1" data-minutes="1.0">
+  <h2 class="slide-heading">現場の仕事と、技術の仕事</h2>
+  <p class="key-message">現場が回し、技術が仕組みを作り、改善は二人で</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="venn-canvas">
+    <div class="set-box set-box--genba" style="left: 0px; top: 10px; width: 700px; height: 300px;"></div>
+    <div class="set-box set-box--gijutsu" style="left: 452px; top: 10px; width: 700px; height: 300px;"></div>
+    <div class="set-region" style="left: 20px; top: 52px; width: 400px;">
+      <p class="set-title role-genba">現場（つくる人）</p>
+      <p class="set-text">決められた通りに作り続ける<br>異常に、最初に気づく<br>止まったら、その場で復旧する</p>
+    </div>
+    <div class="set-region" style="left: 460px; top: 52px; width: 232px;">
+      <p class="set-title">両方の仕事</p>
+      <p class="set-text">起きたトラブル<br>なぜ起きたかを調べる<br>対策を決めて実行する<br>繰り返さないようにする</p>
+    </div>
+    <div class="set-region" style="left: 720px; top: 52px; width: 412px;">
+      <p class="set-title role-gijutsu">技術（つくる仕組みを作る人）</p>
+      <p class="set-text">生産ラインを立ち上げる<br>標準と作業手順書を作る<br>良品条件を決め、品質を作り込む</p>
+    </div>
+  </div>
+  <p class="body-note">重なっているところのやりとりが、いまは紙と表計算のファイルと口頭に分かれています。</p>
+  </div>
+  <p class="page-number">02 / 9</p>
+</div>
+
+<!-- P3: 現場の困りごと(cards・3枚。困りごと＋なぜ起きるか) -->
+<div class="page page--cards" data-goal="G1" data-minutes="1.2">
+  <h2 class="slide-heading">現場の困りごと</h2>
+  <p class="key-message">困りごとの根っこは、記録がつながっていないこと</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="card-row">
+    <div class="card card--hl-1">
+      <div class="card-no"><p>01</p></div>
+      <p class="card-title">対策が場当たりになる</p>
+      <p class="card-text">同じことが何回起きたか<br>数えられない。だから<br>目についた順に手を打つ。</p>
+    </div>
+    <div class="card card--hl-2">
+      <div class="card-no card-no--2"><p>02</p></div>
+      <p class="card-title">効いたか分からない</p>
+      <p class="card-text">対策の記録とトラブルが<br>別の場所にある。だから<br>前と後ろを比べられない。</p>
+    </div>
+    <div class="card card--shadow card--hl-3">
+      <div class="card-no card-no--3"><p>03</p></div>
+      <p class="card-title">別の問題に気づけない</p>
+      <p class="card-text">変えた事実が残らない。<br>だから悪くなり始めた<br>時期と結びつかない。</p>
+    </div>
+  </div>
+  <p class="body-note">三つとも、私が自分の現場で感じたことです。根っこは同じで、記録はあるのに、つながっていません。</p>
+  </div>
+  <p class="page-number">03 / 9</p>
+</div>
+
+<!-- P4: 設計のコンセプト(cycle・機能名入り) -->
+<div class="page" data-goal="G1,G2" data-minutes="2.0">
+  <h2 class="slide-heading">設計のコンセプト — PDCA が回る輪</h2>
+  <p class="key-message">記録から効果確認までを1本の輪にした</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="cy-canvas">
+    <div class="cy-card" style="left: 60px; top: 30px;">
+      <p class="cy-step cy-step--1">P 計画</p>
+      <p class="cy-title">どれを直すか決める</p>
+      <p class="cy-sub">②束ねる ③測る ④順位 ⑤原因の見当<br><span class="cy-screen">問題ボード・パレート図・時系列</span></p>
+    </div>
+    <p class="cy-arrow" style="left: 545px; top: 75px;">→</p>
+    <div class="cy-card" style="left: 712px; top: 30px;">
+      <p class="cy-step cy-step--2">D 実行</p>
+      <p class="cy-title">対策を動かす</p>
+      <p class="cy-sub">⑥担当と期日を付けて動かす<br><span class="cy-screen">工程表</span></p>
+    </div>
+    <p class="cy-arrow" style="left: 885px; top: 185px;">↓</p>
+    <div class="cy-card" style="left: 712px; top: 250px;">
+      <p class="cy-step cy-step--3">C 確認</p>
+      <p class="cy-title">効いたか確かめる</p>
+      <p class="cy-sub">⑦前と後で1日あたりを比べる<br><span class="cy-screen">前後の比較</span></p>
+    </div>
+    <p class="cy-arrow" style="left: 545px; top: 295px;">←</p>
+    <div class="cy-card" style="left: 60px; top: 250px;">
+      <p class="cy-step cy-step--4">A 改善</p>
+      <p class="cy-title">次へつなぐ</p>
+      <p class="cy-sub">対策の実施も、また記録になる<br><span class="cy-screen">自動で1件たまる</span></p>
+    </div>
+    <p class="cy-arrow" style="left: 235px; top: 185px;">↑</p>
+    <div class="cy-center" style="left: 456px; top: 172px; width: 240px;"><p>①記録する<br><span class="cy-screen">入力フォーム</span></p></div>
+  </div>
+  </div>
+  <p class="page-number">04 / 9</p>
+</div>
+
+<!-- P5: 実演(進行要素)。段取り・進行予告は書かない -->
+<div class="page page--bridge" data-goal="-" data-minutes="9.5">
+  <h2 class="slide-heading">では、実物を</h2>
+  <p class="page-number">05 / 9</p>
+</div>
+
+<!-- P6: 技術：画面の土台(dtable・3列) -->
+<div class="page page--table" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">技術：画面の土台</h2>
+  <p class="key-message">画面は既製の土台の上に組んでいる</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="dtable">
+    <div class="dtable-row dtable-row--head">
+      <div class="dtable-cell dtable-cell--t1"><p>技術</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>何ができる道具か（言語・位置づけ）</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>今回どこに使ったか</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">React 19</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>画面を部品に分けて組む。TypeScript のライブラリ</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>画面全体。部品にして使い回す</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">TypeScript</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>JavaScript に型を足した言語。誤りを先に見つける</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>画面もサーバも、この言語で書いている</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">Vite</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>書き手がコードを保存した瞬間に、画面へ反映<br>言語でもライブラリでもなく、開発時だけ動く道具</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>開発中の画面づくり。試す回数が増える</p></div>
+    </div>
+  </div>
+  <p class="body-note">ほかに TanStack Query を使い、取ってきたデータを覚えておいて同じ問い合わせを繰り返さないようにしています。</p>
+  </div>
+  <p class="page-number">06 / 9</p>
+</div>
+
+<!-- P7: 技術：見た目と表現(スクリーンショット4枚。どの画面でどの技術が使われているか) -->
+<div class="page page--shots" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">技術：見た目と表現</h2>
+  <p class="key-message">見た目は既製品、足りない所だけ自作した</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="shot-row">
+    <div class="shot">
+      <img src="shots-app/form.png" alt="イベント登録フォームの画面">
+      <p class="shot-tech">Tailwind CSS ／ shadcn/ui</p>
+      <p class="shot-kind">CSS の書き方と部品の配り方</p>
+      <p class="shot-note">入力欄もボタンも既製</p>
+    </div>
+    <div class="shot">
+      <img src="shots-app/pareto.png" alt="パレート図の画面">
+      <p class="shot-tech">Recharts</p>
+      <p class="shot-kind">React 用のグラフ部品</p>
+      <p class="shot-note">棒と折れ線を1つの図に</p>
+    </div>
+    <div class="shot">
+      <img src="shots-app/timeline.png" alt="横断タイムラインの画面">
+      <p class="shot-tech">自作の工程表</p>
+      <p class="shot-kind">素の div ＋ Tailwind</p>
+      <p class="shot-note">日付もドラッグも画面側</p>
+    </div>
+    <div class="shot">
+      <img src="shots-app/login.png" alt="ログイン画面の背景">
+      <p class="shot-tech">three.js ／ WebGL</p>
+      <p class="shot-kind">3Dの仕組みとライブラリ</p>
+      <p class="shot-note">毎回その場で描く背景</p>
+    </div>
+  </div>
+  </div>
+  <p class="page-number">07 / 9</p>
+</div>
+
+<!-- P8: 技術：サーバとデータ(dtable・3列) -->
+<div class="page page--table" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">技術：サーバとデータ</h2>
+  <p class="key-message">データの定義を1本にして、ずれを防ぐ</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="dtable">
+    <div class="dtable-row dtable-row--head">
+      <div class="dtable-cell dtable-cell--t1"><p>技術</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>何ができる道具か（言語・位置づけ）</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>今回どこに使ったか</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">Node.js ／ Express</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>JavaScript をサーバで動かす土台と、要求の振り分け</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>APIの受け口。画面と同じ言語で書ける</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">PostgreSQL</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>表でデータを持つ SQL のデータベース</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>件数・合計・並べ替えの集計を担当</p></div>
+    </div>
+    <div class="dtable-row">
+      <div class="dtable-cell dtable-cell--t1"><p class="cell-accent">Drizzle ORM ／ Zod</p></div>
+      <div class="dtable-cell dtable-cell--t2"><p>SQL を書かず TypeScript のまま読み書きできる（ORM）<br>テーブル定義1本から、表・型・チェックを作る</p></div>
+      <div class="dtable-cell dtable-cell--t3"><p>表づくりは開発時、読み書きは実行時</p></div>
+    </div>
+  </div>
+  <p class="body-note">表と型とチェックが同じ定義から出るので、人が三か所に同じことを書かずに済みます。</p>
+  </div>
+  <p class="page-number">08 / 9</p>
+</div>
+
+<!-- P9: 技術：置き場所と運用(compare・2列) -->
+<div class="page page--compare" data-goal="G3" data-minutes="1.5">
+  <h2 class="slide-heading">技術：置き場所と運用</h2>
+  <p class="key-message">同じアプリを、クラウドにも社内にも置ける</p>
+  <div class="header-rule"></div>
+  <div class="slide-body">
+  <div class="compare-row">
+    <div class="compare-col compare-col--before">
+      <p class="compare-label">クラウド（Vercel）</p>
+      <ul class="bullet-list">
+        <li>Web アプリを置いて動かすサービス</li>
+        <li>Express を丸ごと1つの関数として載せる</li>
+        <li>サーバの用意も更新も要らない</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-col--after">
+      <p class="compare-label">社内のサーバ</p>
+      <ul class="bullet-list">
+        <li>データを外に出せないときに選ぶ</li>
+        <li>切り替えは環境変数の差し替えだけ</li>
+        <li>自動起動とバックアップは自前で組む</li>
+      </ul>
+    </div>
+  </div>
+  <p class="body-note">無改造では移せません。静的ファイルの配り方・書き込み先・本文の大きさ・実行時間は揃えます。</p>
+  </div>
+  <p class="page-number">09 / 9</p>
+</div>
+
+</body>
+</html>
